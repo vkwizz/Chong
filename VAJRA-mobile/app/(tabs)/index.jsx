@@ -4,47 +4,51 @@ import {
     Animated, Dimensions, Image,
 } from 'react-native';
 import WebView from 'react-native-webview';
-import Svg, { Ellipse, Rect, Path, Text as SvgText, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { useTelematicsContext } from '../_layout';
 import { useRouter } from 'expo-router';
-import { Shield, FileSearch } from 'lucide-react-native';
+import {
+    Shield, FileSearch, Map,
+    ChevronDown, Activity, Compass, Calendar, Gauge,
+} from 'lucide-react-native';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const LIME = '#B8E840';
 const DARK = '#1C1C1E';
 const CREAM = '#F2EDE8';
 
-// Side-scooter design implemented with high-res Image
-
 export default function Dashboard() {
     const ctx = useTelematicsContext();
     const router = useRouter();
     const scrollY = useRef(new Animated.Value(0)).current;
+
     const [showDiag, setShowDiag] = useState(false);
     const diagAnim = useRef(new Animated.Value(0)).current;
+    const imgScale = useRef(new Animated.Value(1)).current;
 
     const p = ctx?.latestPacket;
-    const speed = p?.speed ?? 0;
-    const ign = p?.ignitionStatus === 1;
+    const speed = Math.round(p?.speed ?? 0);
     const immob = ctx?.immobActive ?? false;
+    const ign = immob ? false : (p?.ignitionStatus === 1);
     const volt = p?.analogVoltage ?? 0;
     const voltPct = Math.min(100, (volt / 5) * 100);
     const voltColor = volt < 2 ? '#ef4444' : volt < 3.5 ? '#f59e0b' : LIME;
 
-    const imgScale = useRef(new Animated.Value(1)).current;
+    // Simulated odometer derived from packet frame count
+    const odemeter = (p?.frameNumber ?? 0) * 0.12;
 
     useEffect(() => {
         Animated.timing(diagAnim, {
             toValue: showDiag ? 1 : 0,
-            duration: 500,
+            duration: 420,
             useNativeDriver: true,
         }).start();
     }, [showDiag]);
 
     const onPressHero = () => {
         Animated.sequence([
-            Animated.timing(imgScale, { toValue: 1.15, duration: 200, useNativeDriver: true }),
-            Animated.timing(imgScale, { toValue: 1, duration: 200, useNativeDriver: true }),
+            Animated.timing(imgScale, { toValue: 1.08, duration: 180, useNativeDriver: true }),
+            Animated.timing(imgScale, { toValue: 1, duration: 180, useNativeDriver: true }),
         ]).start(() => setShowDiag(true));
     };
 
@@ -53,32 +57,31 @@ export default function Dashboard() {
         outputRange: [SCREEN_HEIGHT, 0],
     });
 
-    const mainScale = diagAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [1, 0.95],
-    });
-
     return (
         <View style={S.root}>
-            {/* Header: Hello [User] + Profile Icon */}
+
+            {/* ── Header ── */}
             <View style={S.header}>
                 <View>
                     <Text style={S.headerSub}>Hello,</Text>
                     <Text style={S.headerTitle}>Vajra Driver</Text>
                 </View>
                 <View style={S.profileCircle}>
-                    <Circle size={32} color={DARK} fill={DARK} />
                     <View style={S.profilePlaceholder} />
                 </View>
             </View>
 
+            {/* ── Scrollable content ── */}
             <Animated.ScrollView
-                onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
+                onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                    { useNativeDriver: false }
+                )}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={S.scrollContent}
             >
-                {/* Hero Card: "Chong" Luxury Section */}
+                {/* Hero Card */}
                 <TouchableOpacity activeOpacity={1} onPress={onPressHero} style={S.heroCard}>
                     <View style={S.chongHeader}>
                         <Text style={S.chongText}>Chong</Text>
@@ -87,7 +90,6 @@ export default function Dashboard() {
                         </View>
                     </View>
                     <View style={S.imageContainer}>
-                        <View style={S.scooterGlow} />
                         <Animated.Image
                             source={require('../../assets/scooter_side.jpeg')}
                             style={[S.scooterImage, { transform: [{ scale: imgScale }] }]}
@@ -95,20 +97,21 @@ export default function Dashboard() {
                     </View>
                     <View style={S.chongFooter}>
                         <Text style={S.scooterModel}>GTS Super 300</Text>
+                        <Text style={S.tapHint}>Tap for details</Text>
                     </View>
                 </TouchableOpacity>
 
-                {/* Grid Row: Charging Station + Battery */}
+                {/* Grid Row: Map + Battery */}
                 <View style={S.gridRow}>
-                    {/* Charging Station Card - Live Mini Map */}
+                    {/* Mini Map card */}
                     <TouchableOpacity
                         activeOpacity={0.9}
                         onPress={() => router.push('/(tabs)/map')}
                         style={S.chargingCard}
                     >
                         <View style={S.cardHeader}>
-                            <Text style={S.cardTitle}>Charging{"\n"}Station</Text>
-                            <Map color={DARK} size={24} strokeWidth={2.5} />
+                            <Text style={S.cardTitle}>Live{"\n"}Map</Text>
+                            <Map color={DARK} size={22} strokeWidth={2.5} />
                         </View>
 
                         <View style={S.miniMapWrapper}>
@@ -116,32 +119,23 @@ export default function Dashboard() {
                                 pointerEvents="none"
                                 scrollEnabled={false}
                                 source={{
-                                    html: `
-                                    <html>
-                                    <head>
-                                        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-                                        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-                                        <style>
-                                            * { margin:0; padding:0; }
-                                            #map { width:100%; height:100%; background:#1c1c1e; }
-                                            .leaflet-control-attribution { display:none !important; }
-                                        </style>
-                                    </head>
-                                    <body>
-                                        <div id="map"></div>
-                                        <script>
-                                            var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${p?.latitude || 12.9716}, ${p?.longitude || 77.5946}], 15);
-                                            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-                                            L.circle([${p?.latitude || 12.9716}, ${p?.longitude || 77.5946}], { color: '#B8E840', fillColor: '#B8E840', fillOpacity: 0.6, radius: 100 }).addTo(map);
-                                        </script>
-                                    </body>
-                                    </html>
-                                `}}
+                                    html: `<!DOCTYPE html><html><head>
+                                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+                                    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                    <style>*{margin:0;padding:0;}#map{width:100%;height:100%;}.leaflet-control-attribution{display:none!important;}</style>
+                                    </head><body><div id="map"></div><script>
+                                    var m=L.map('map',{zoomControl:false,attributionControl:false}).setView([${p?.latitude || 12.9716},${p?.longitude || 77.5946}],15);
+                                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(m);
+                                    L.circle([${p?.latitude || 12.9716},${p?.longitude || 77.5946}],{color:'#B8E840',fillColor:'#B8E840',fillOpacity:0.5,radius:80}).addTo(m);
+                                    </script></body></html>` }}
                                 style={S.miniMap}
+                                javaScriptEnabled
+                                originWhitelist={['*']}
+                                mixedContentMode="always"
                             />
                             <View style={S.mapOverlay}>
                                 <View style={S.innerBox}>
-                                    <Text style={S.distLabel}>NEAR BY</Text>
+                                    <Text style={S.distLabel}>NEARBY</Text>
                                 </View>
                             </View>
                         </View>
@@ -149,37 +143,27 @@ export default function Dashboard() {
                         <Text style={S.cardHint}>Open full map →</Text>
                     </TouchableOpacity>
 
-                    {/* Battery Energy Card - Wavy Flow Effect */}
+                    {/* Battery card */}
                     <View style={S.batteryCard}>
-                        {/* The Wave Fill Background */}
+                        {/* Wave fill background */}
                         <View style={S.waveBackground}>
-                            <View style={[S.waveFill, { height: `${voltPct}%`, backgroundColor: 'rgba(184,232,64,0.15)' }]}>
-                                <Svg height="24" width="150%" viewBox="0 0 100 20" style={S.waveSvg}>
-                                    <Path
-                                        d="M0 10 Q 25 20 50 10 T 100 10"
-                                        fill="none"
-                                        stroke="rgba(184,232,64,0.3)"
-                                        strokeWidth="2"
-                                    />
+                            <View style={[S.waveFill, { height: `${voltPct}%`, backgroundColor: 'rgba(184,232,64,0.14)' }]}>
+                                <Svg height={24} width="150%" viewBox="0 0 100 20" style={S.waveSvg}>
+                                    <Path d="M0 10 Q 25 20 50 10 T 100 10" fill="none" stroke="rgba(184,232,64,0.28)" strokeWidth="2" />
                                 </Svg>
                             </View>
                         </View>
 
-                        <Text style={S.battEnergyLabel}>Battery energy</Text>
-
+                        <Text style={S.battEnergyLabel}>Battery</Text>
                         <View style={S.battContent}>
-                            <Image
-                                source={require('../../assets/scooter_front.jpeg')}
-                                style={S.battScooterImage}
-                            />
-                            <Text style={S.battPctHuge}>{voltPct.toFixed(0)}%</Text>
+                            <Image source={require('../../assets/scooter_front.jpeg')} style={S.battScooterImage} />
+                            <Text style={[S.battPctHuge, { color: voltColor }]}>{voltPct.toFixed(0)}%</Text>
                         </View>
-
-                        <Text style={S.powerSaveLabel}>{voltPct > 20 ? 'Standard mode' : 'Power saving mode'}</Text>
+                        <Text style={S.powerSaveLabel}>{voltPct > 20 ? 'Standard mode' : '⚠️ Low battery'}</Text>
                     </View>
                 </View>
 
-                {/* Status Toggles Section */}
+                {/* Status Section */}
                 <View style={S.statusSection}>
                     <View style={S.statusRow}>
                         <View>
@@ -193,7 +177,7 @@ export default function Dashboard() {
                         </View>
                     </View>
 
-                    <View style={S.statusRow}>
+                    <View style={[S.statusRow, { borderBottomWidth: 0 }]}>
                         <View>
                             <Text style={S.statusLabel}>Immobilizer</Text>
                             <Text style={S.statusSub}>Digital Output (DO1)</Text>
@@ -227,177 +211,200 @@ export default function Dashboard() {
 
                 <View style={{ height: 40 }} />
             </Animated.ScrollView>
-        </Animated.View>
 
-            {/* Diagnostics Overlay */ }
-    <Animated.View style={[S.diagOverlay, { transform: [{ translateY: diagTranslateY }] }]}>
-        <View style={S.diagHeader}>
-            <TouchableOpacity onPress={() => setShowDiag(false)} style={S.closeBtn}>
-                <ChevronDown color={DARK} size={28} />
-            </TouchableOpacity>
-            <Text style={S.diagTitle}>Vehicle Details</Text>
-            <Activity color={LIME} size={20} />
-        </View>
-
-        <View style={S.diagContent}>
-            <View style={S.diagTopRow}>
-                <View style={S.diagGridLeft}>
-                    <View style={S.diagCard}>
-                        <Text style={S.diagLabel}>total km</Text>
-                        <Text style={S.diagValue}>{odemeter.toFixed(1)}</Text>
-                        <Compass size={16} color="#999" />
-                    </View>
-                    <View style={S.diagCard}>
-                        <Text style={S.diagLabel}>service date</Text>
-                        <Text style={S.diagValue}>24-11</Text>
-                        <Calendar size={16} color="#999" />
-                    </View>
+            {/* ── Diagnostics Overlay ── */}
+            <Animated.View
+                style={[S.diagOverlay, { transform: [{ translateY: diagTranslateY }] }]}
+                pointerEvents={showDiag ? 'auto' : 'none'}
+            >
+                <View style={S.diagHeader}>
+                    <TouchableOpacity onPress={() => setShowDiag(false)} style={S.closeBtn}>
+                        <ChevronDown color={DARK} size={26} />
+                    </TouchableOpacity>
+                    <Text style={S.diagTitle}>Vehicle Details</Text>
+                    <Activity color={LIME} size={20} />
                 </View>
 
-                {/* Charge Vertical Bar */}
-                <View style={S.diagChargePanel}>
-                    <Text style={S.diagLabel}>charge</Text>
-                    <View style={S.diagChargeOuter}>
-                        <View style={[S.diagChargeFill, { height: `${voltPct}%`, backgroundColor: voltColor }]} />
-                    </View>
-                    <Text style={S.diagChargeText}>{voltPct.toFixed(0)}%</Text>
-                </View>
-            </View>
-
-            <View style={S.diagMidRow}>
-                <View style={S.diagCardWide}>
-                    <Text style={S.diagLabel}>Diago area</Text>
-                    <View style={S.diagoStats}>
-                        <View style={S.diagoItem}>
-                            <View style={[S.statusDot, { backgroundColor: LIME }]} />
-                            <Text style={S.diagoText}>Engine OK</Text>
+                <View style={S.diagContent}>
+                    <View style={S.diagTopRow}>
+                        <View style={S.diagGridLeft}>
+                            <View style={S.diagCard}>
+                                <Text style={S.diagLabel}>Total km</Text>
+                                <Text style={S.diagValue}>{odemeter.toFixed(1)}</Text>
+                                <Compass size={16} color="#999" />
+                            </View>
+                            <View style={S.diagCard}>
+                                <Text style={S.diagLabel}>Service date</Text>
+                                <Text style={S.diagValue}>24-11</Text>
+                                <Calendar size={16} color="#999" />
+                            </View>
                         </View>
-                        <View style={S.diagoItem}>
-                            <View style={[S.statusDot, { backgroundColor: LIME }]} />
-                            <Text style={S.diagoText}>Brakes OK</Text>
+
+                        {/* Charge bar */}
+                        <View style={S.diagChargePanel}>
+                            <Text style={S.diagLabel}>Charge</Text>
+                            <View style={S.diagChargeOuter}>
+                                <View style={[S.diagChargeFill, { height: `${voltPct}%`, backgroundColor: voltColor }]} />
+                            </View>
+                            <Text style={[S.diagChargeText, { color: voltColor }]}>{voltPct.toFixed(0)}%</Text>
                         </View>
                     </View>
-                </View>
-                <View style={S.diagCard}>
-                    <Text style={S.diagLabel}>speed</Text>
-                    <Text style={S.diagValue}>{speed}</Text>
-                    <Gauge size={16} color="#999" />
-                </View>
-            </View>
 
-            <View style={S.diagScooterContainer}>
-                <Image
-                    source={require('../../assets/scooter_side.jpeg')}
-                    style={S.diagScooterImage}
-                />
-            </View>
+                    <View style={S.diagMidRow}>
+                        <View style={S.diagCardWide}>
+                            <Text style={S.diagLabel}>Diagnostics</Text>
+                            <View style={S.diagoStats}>
+                                <View style={S.diagoItem}>
+                                    <View style={[S.statusDot, { backgroundColor: LIME }]} />
+                                    <Text style={S.diagoText}>Engine OK</Text>
+                                </View>
+                                <View style={S.diagoItem}>
+                                    <View style={[S.statusDot, { backgroundColor: LIME }]} />
+                                    <Text style={S.diagoText}>Brakes OK</Text>
+                                </View>
+                            </View>
+                        </View>
+                        <View style={S.diagCard}>
+                            <Text style={S.diagLabel}>Speed</Text>
+                            <Text style={S.diagValue}>{speed}</Text>
+                            <Gauge size={16} color="#999" />
+                        </View>
+                    </View>
+
+                    <View style={S.diagScooterContainer}>
+                        <Image
+                            source={require('../../assets/scooter_side.jpeg')}
+                            style={S.diagScooterImage}
+                        />
+                    </View>
+                </View>
+            </Animated.View>
+
         </View>
-    </Animated.View>
-        </View >
     );
 }
 
 const S = StyleSheet.create({
     root: { flex: 1, backgroundColor: CREAM },
-    mainWrap: { flex: 1 },
     header: {
         paddingHorizontal: 24, paddingTop: 60, paddingBottom: 20,
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     },
     headerSub: { fontSize: 13, color: '#999', fontWeight: '600' },
     headerTitle: { fontSize: 22, fontWeight: '900', color: DARK },
-    profileCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', overflow: 'hidden', position: 'relative', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 },
-    profilePlaceholder: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.02)' },
+    profileCircle: {
+        width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff',
+        overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 3,
+    },
+    profilePlaceholder: { width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.06)' },
     scrollContent: { paddingHorizontal: 24 },
 
-    // Chong Premium Card
+    /* hero */
     heroCard: {
-        backgroundColor: '#fff', borderRadius: 36, padding: 24, height: SCREEN_HEIGHT * 0.4,
-        shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 30, elevation: 8,
+        backgroundColor: '#fff', borderRadius: 36, padding: 24,
+        height: SCREEN_HEIGHT * 0.38,
+        shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 28, elevation: 8,
         marginBottom: 20, overflow: 'hidden',
     },
     chongHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    chongText: { fontSize: 38, fontWeight: '900', color: DARK, letterSpacing: -1.5 },
+    chongText: { fontSize: 36, fontWeight: '900', color: DARK, letterSpacing: -1.5 },
     premiumBadge: { backgroundColor: DARK, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
     premiumText: { color: LIME, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
-    imageContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', position: 'relative' },
-    scooterGlow: { position: 'absolute', width: 220, height: 140, backgroundColor: LIME, borderRadius: 100, opacity: 0.12, transform: [{ scale: 1.4 }], filter: 'blur(50px)' },
-    scooterImage: { width: '130%', height: '100%', resizeMode: 'contain', zIndex: 2, backgroundColor: 'transparent' },
+    imageContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    scooterImage: { width: '130%', height: '100%', resizeMode: 'contain' },
     chongFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
     scooterModel: { fontSize: 14, fontWeight: '800', color: '#333' },
-    scooterStatus: { fontSize: 11, fontWeight: '600', color: LIME, backgroundColor: DARK, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+    tapHint: { fontSize: 11, color: '#bbb', fontWeight: '600' },
 
+    /* grid */
     gridRow: { flexDirection: 'row', gap: 16, marginBottom: 20, height: SCREEN_HEIGHT * 0.28 },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' },
 
+    /* map card */
     chargingCard: {
         flex: 1, backgroundColor: LIME, borderRadius: 32, padding: 20,
-        justifyContent: 'space-between', shadowColor: LIME, shadowOpacity: 0.3, shadowRadius: 15, elevation: 5,
+        justifyContent: 'space-between',
+        shadowColor: LIME, shadowOpacity: 0.3, shadowRadius: 15, elevation: 5,
     },
     cardTitle: { fontSize: 17, fontWeight: '900', color: DARK, lineHeight: 20, letterSpacing: -0.5 },
-    miniMapWrapper: { width: '100%', height: 100, borderRadius: 20, overflow: 'hidden', position: 'relative', backgroundColor: 'rgba(0,0,0,0.05)' },
-    miniMap: { width: '100%', height: '100%', opacity: 0.8 },
+    miniMapWrapper: {
+        width: '100%', flex: 1, borderRadius: 18, overflow: 'hidden',
+        position: 'relative', backgroundColor: 'rgba(0,0,0,0.05)', marginVertical: 8,
+    },
+    miniMap: { width: '100%', height: '100%', opacity: 0.85 },
     mapOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-    innerBox: { backgroundColor: DARK, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4 },
-    distLabel: { color: LIME, fontSize: 12, fontWeight: '900' },
-    cardHint: { fontSize: 11, color: DARK, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+    innerBox: { backgroundColor: DARK, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+    distLabel: { color: LIME, fontSize: 11, fontWeight: '900' },
+    cardHint: { fontSize: 10, color: DARK, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
 
+    /* battery card */
     batteryCard: {
         flex: 1, backgroundColor: '#fff', borderRadius: 32, padding: 20,
-        justifyContent: 'space-between', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 15, elevation: 3,
-        position: 'relative', overflow: 'hidden',
+        justifyContent: 'space-between',
+        shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 15, elevation: 3,
+        overflow: 'hidden', position: 'relative',
     },
     waveBackground: { position: 'absolute', bottom: 0, left: 0, right: 0, top: 0, justifyContent: 'flex-end', zIndex: 0 },
     waveFill: { width: '100%', position: 'relative' },
     waveSvg: { position: 'absolute', top: -12, left: -20 },
-    battEnergyLabel: { fontSize: 13, color: '#999', fontWeight: '800', textAlign: 'center', zIndex: 1 },
-    battContent: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 1 },
-    battScooterImage: { width: 80, height: 100, resizeMode: 'contain' },
-    battPctHuge: { fontSize: 42, fontWeight: '900', color: DARK, letterSpacing: -2 },
-    powerSaveLabel: { fontSize: 11, color: '#777', fontWeight: '800', textAlign: 'center', zIndex: 1 },
+    battEnergyLabel: { fontSize: 12, color: '#999', fontWeight: '800', textAlign: 'center', zIndex: 1 },
+    battContent: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, zIndex: 1 },
+    battScooterImage: { width: 70, height: 85, resizeMode: 'contain' },
+    battPctHuge: { fontSize: 38, fontWeight: '900', letterSpacing: -2, zIndex: 1 },
+    powerSaveLabel: { fontSize: 10, color: '#999', fontWeight: '700', textAlign: 'center', zIndex: 1 },
 
-    statusSection: { backgroundColor: '#fff', borderRadius: 32, padding: 24, marginBottom: 20, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 20, elevation: 2 },
+    /* status */
+    statusSection: {
+        backgroundColor: '#fff', borderRadius: 32, padding: 22, marginBottom: 20,
+        shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 16, elevation: 2,
+    },
     statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f8f8f8' },
     statusLabel: { fontSize: 15, fontWeight: '800', color: DARK },
     statusSub: { fontSize: 11, color: '#bbb', fontWeight: '600', marginTop: 2 },
     toggleWrap: { flexDirection: 'row', backgroundColor: '#f5f5f5', borderRadius: 100, padding: 4, alignItems: 'center' },
-    toggleLabel: { fontSize: 10, fontWeight: '900', color: '#ccc', paddingHorizontal: 14, paddingVertical: 8 },
-    toggleDivider: { width: 1, height: 12, backgroundColor: '#eee' },
-    toggleActive: { color: DARK, backgroundColor: LIME, borderRadius: 100, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
-    toggleActiveRed: { color: '#fff', backgroundColor: '#ef4444', borderRadius: 100, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
+    toggleLabel: { fontSize: 10, fontWeight: '900', color: '#ccc', paddingHorizontal: 12, paddingVertical: 7 },
+    toggleDivider: { width: 1, height: 10, backgroundColor: '#eee' },
+    toggleActive: { color: DARK, backgroundColor: LIME, borderRadius: 100 },
+    toggleActiveRed: { color: '#fff', backgroundColor: '#ef4444', borderRadius: 100 },
 
+    /* actions */
     actionRow: { flexDirection: 'row', gap: 12 },
-    quickBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 60, borderRadius: 100, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 4 },
-    quickBtnText: { color: LIME, fontSize: 16, fontWeight: '900', letterSpacing: 0.5 },
+    quickBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 58, borderRadius: 100, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, elevation: 4 },
+    quickBtnText: { color: LIME, fontSize: 15, fontWeight: '900', letterSpacing: 0.5 },
 
-    // Diagnostics Styles
+    /* diagnostics overlay */
     diagOverlay: {
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
         backgroundColor: CREAM, borderTopLeftRadius: 40, borderTopRightRadius: 40,
-        paddingTop: 50, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 30, elevation: 20
+        paddingTop: 52,
+        shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 30, elevation: 24,
     },
     diagHeader: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 24, marginBottom: 30
+        paddingHorizontal: 24, marginBottom: 24,
     },
-    closeBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+    closeBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
     diagTitle: { fontSize: 18, fontWeight: '900', color: DARK },
+
     diagContent: { flex: 1, paddingHorizontal: 24 },
-    diagTopRow: { flexDirection: 'row', gap: 16, height: 220, marginBottom: 16 },
+    diagTopRow: { flexDirection: 'row', gap: 16, height: 210, marginBottom: 16 },
     diagGridLeft: { flex: 1.2, gap: 16 },
-    diagCard: { flex: 1, backgroundColor: '#fff', borderRadius: 28, padding: 16, justifyContent: 'space-between' },
-    diagLabel: { fontSize: 11, fontWeight: '800', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5 },
-    diagValue: { fontSize: 28, fontWeight: '900', color: DARK },
-    diagChargePanel: { flex: 0.8, backgroundColor: DARK, borderRadius: 28, padding: 16, alignItems: 'center', justifyContent: 'space-between' },
-    diagChargeOuter: { width: 14, height: 120, backgroundColor: '#333', borderRadius: 10, overflow: 'hidden', justifyContent: 'flex-end' },
+    diagCard: { flex: 1, backgroundColor: '#fff', borderRadius: 28, padding: 16, justifyContent: 'space-between', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, elevation: 2 },
+    diagLabel: { fontSize: 10, fontWeight: '800', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.6 },
+    diagValue: { fontSize: 26, fontWeight: '900', color: DARK },
+
+    diagChargePanel: { flex: 0.75, backgroundColor: DARK, borderRadius: 28, padding: 16, alignItems: 'center', justifyContent: 'space-between' },
+    diagChargeOuter: { width: 14, height: 110, backgroundColor: '#2a2a2a', borderRadius: 10, overflow: 'hidden', justifyContent: 'flex-end' },
     diagChargeFill: { width: '100%', borderRadius: 8 },
-    diagChargeText: { fontSize: 16, fontWeight: '900', color: LIME },
-    diagMidRow: { flexDirection: 'row', gap: 16, height: 120, marginBottom: 20 },
-    diagCardWide: { flex: 1.5, backgroundColor: '#fff', borderRadius: 28, padding: 16 },
-    diagoStats: { marginTop: 10, gap: 8 },
+    diagChargeText: { fontSize: 15, fontWeight: '900' },
+
+    diagMidRow: { flexDirection: 'row', gap: 16, height: 110, marginBottom: 16 },
+    diagCardWide: { flex: 1.5, backgroundColor: '#fff', borderRadius: 28, padding: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, elevation: 2 },
+    diagoStats: { marginTop: 8, gap: 8 },
     diagoItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     statusDot: { width: 6, height: 6, borderRadius: 3 },
     diagoText: { fontSize: 13, fontWeight: '700', color: DARK },
-    diagScooterContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -20 },
-    diagScooterImage: { width: width * 1.2, height: 260, resizeMode: 'contain' },
+
+    diagScooterContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -10 },
+    diagScooterImage: { width: width * 1.1, height: 220, resizeMode: 'contain' },
 });
