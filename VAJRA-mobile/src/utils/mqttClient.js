@@ -65,6 +65,18 @@ export function publishImmobilizerCommand(state) {
     setTimeout(() => immobilizerListeners.forEach(cb => cb({ state, acknowledged: true })), connected ? 500 : 300);
 }
 
+export function publishFrequencyCommand(seconds) {
+    const payload = JSON.stringify({
+        command: 'SET_FREQ',
+        interval_seconds: seconds,
+        timestamp: Math.floor(Date.now() / 1000),
+    });
+    if (client && connected) {
+        client.publish(MQTT_CONFIG.topics.control, payload, { qos: 1 });
+        console.log('[MQTT] Published frequency command:', seconds, 's');
+    }
+}
+
 export function onPacketReceived(cb) {
     listeners.push(cb);
     return () => { listeners = listeners.filter(l => l !== cb); };

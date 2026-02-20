@@ -145,6 +145,26 @@ export function publishImmobilizerCommand(state) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Publish Data Frequency Command
+// ─────────────────────────────────────────────────────────────────────────────
+export function publishFrequencyCommand(seconds) {
+    const payload = JSON.stringify({
+        command: 'SET_FREQ',
+        interval_seconds: seconds,
+        timestamp: Math.floor(Date.now() / 1000),
+    });
+
+    if (client && connected) {
+        client.publish(MQTT_CONFIG.topics.control, payload, { qos: 1 }, (err) => {
+            if (err) console.error('[MQTT] Frequency publish error:', err);
+            else console.log('[MQTT] Published frequency command:', payload);
+        });
+    } else {
+        console.warn('[MQTT] Not connected — frequency command simulated');
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Subscriptions (used by simulator when no real MQTT)
 // ─────────────────────────────────────────────────────────────────────────────
 export function onPacketReceived(cb) {

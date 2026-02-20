@@ -10,8 +10,9 @@ import { useRouter } from 'expo-router';
 import {
     Shield, FileSearch, Map, Settings,
     ChevronDown, Activity, Compass, Calendar, Gauge, User, Bell, LogOut,
-    Lock, Headphones
+    Lock, Headphones, Zap
 } from 'lucide-react-native';
+import { publishFrequencyCommand } from '../../src/utils/mqttClient';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const LIME = '#B8E840';
@@ -26,6 +27,7 @@ export default function Dashboard() {
     const [showDiag, setShowDiag] = useState(false);
     const [showBatt, setShowBatt] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [dataRate, setDataRate] = useState('optimized'); // 'saver', 'optimized', 'performance'
     const diagAnim = useRef(new Animated.Value(0)).current;
     const battAnim = useRef(new Animated.Value(0)).current;
     const settingsAnim = useRef(new Animated.Value(0)).current;
@@ -72,6 +74,12 @@ export default function Dashboard() {
             Animated.timing(imgScale, { toValue: 1.08, duration: 180, useNativeDriver: true }),
             Animated.timing(imgScale, { toValue: 1, duration: 180, useNativeDriver: true }),
         ]).start(() => setShowDiag(true));
+    };
+
+    const onSelectDataRate = (rate) => {
+        setDataRate(rate);
+        const seconds = rate === 'saver' ? 60 : rate === 'performance' ? 1 : 10;
+        publishFrequencyCommand(seconds);
     };
 
     const onPressBattery = () => {
@@ -432,6 +440,37 @@ export default function Dashboard() {
                             </View>
                         </TouchableOpacity>
 
+                        <View style={S.dataRateSection}>
+                            <View style={S.settingsItemHeader}>
+                                <Zap color={DARK} size={20} />
+                                <Text style={S.settingsItemLabel}>Data Optimizer</Text>
+                            </View>
+                            <Text style={S.settingsItemSub}>Adjust transmission rate to save data costs</Text>
+                            <View style={S.rateRow}>
+                                <TouchableOpacity
+                                    onPress={() => onSelectDataRate('saver')}
+                                    style={[S.rateOpt, dataRate === 'saver' && S.rateOptActive]}
+                                >
+                                    <Text style={[S.rateText, dataRate === 'saver' && S.rateTextActive]}>Saver</Text>
+                                    <Text style={S.rateSub}>60s</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => onSelectDataRate('optimized')}
+                                    style={[S.rateOpt, dataRate === 'optimized' && S.rateOptActive]}
+                                >
+                                    <Text style={[S.rateText, dataRate === 'optimized' && S.rateTextActive]}>Auto</Text>
+                                    <Text style={S.rateSub}>10s</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => onSelectDataRate('performance')}
+                                    style={[S.rateOpt, dataRate === 'performance' && S.rateOptActive]}
+                                >
+                                    <Text style={[S.rateText, dataRate === 'performance' && S.rateTextActive]}>Turbo</Text>
+                                    <Text style={S.rateSub}>1s</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
                         <TouchableOpacity style={[S.settingsItem, { borderBottomWidth: 1, borderBottomColor: '#f1f1f1' }]}>
                             <View style={S.settingsIconWrap}>
                                 <Lock color={DARK} size={20} />
@@ -615,4 +654,14 @@ const S = StyleSheet.create({
     logOutText: { fontSize: 15, fontWeight: '900', color: '#ef4444' },
     appVersionBox: { marginTop: 'auto', marginBottom: 40, alignItems: 'center' },
     appVersionText: { fontSize: 12, color: '#ccc', fontWeight: '700' },
+
+    /* data rate unique */
+    dataRateSection: { paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#f1f1f1' },
+    settingsItemHeader: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 8 },
+    rateRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    rateOpt: { flex: 1, height: 54, borderRadius: 16, borderWidth: 1, borderColor: '#eee', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9f9f9' },
+    rateOptActive: { borderColor: DARK, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+    rateText: { fontSize: 13, fontWeight: '800', color: '#666' },
+    rateTextActive: { color: DARK },
+    rateSub: { fontSize: 9, color: '#aaa', fontWeight: '700', marginTop: 2 },
 });
