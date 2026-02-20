@@ -9,7 +9,8 @@ import { useTelematicsContext } from '../_layout';
 import { useRouter } from 'expo-router';
 import {
     Shield, FileSearch, Map, Settings,
-    ChevronDown, Activity, Compass, Calendar, Gauge, User, Bell, LogOut
+    ChevronDown, Activity, Compass, Calendar, Gauge, User, Bell, LogOut,
+    Lock, Headphones
 } from 'lucide-react-native';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -23,10 +24,13 @@ export default function Dashboard() {
     const scrollY = useRef(new Animated.Value(0)).current;
 
     const [showDiag, setShowDiag] = useState(false);
+    const [showBatt, setShowBatt] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const diagAnim = useRef(new Animated.Value(0)).current;
+    const battAnim = useRef(new Animated.Value(0)).current;
     const settingsAnim = useRef(new Animated.Value(0)).current;
     const imgScale = useRef(new Animated.Value(1)).current;
+    const battScale = useRef(new Animated.Value(1)).current;
 
     const p = ctx?.latestPacket;
     const speed = Math.round(p?.speed ?? 0);
@@ -48,6 +52,14 @@ export default function Dashboard() {
     }, [showDiag]);
 
     useEffect(() => {
+        Animated.timing(battAnim, {
+            toValue: showBatt ? 1 : 0,
+            duration: 450,
+            useNativeDriver: true,
+        }).start();
+    }, [showBatt]);
+
+    useEffect(() => {
         Animated.timing(settingsAnim, {
             toValue: showSettings ? 1 : 0,
             duration: 400,
@@ -62,7 +74,19 @@ export default function Dashboard() {
         ]).start(() => setShowDiag(true));
     };
 
+    const onPressBattery = () => {
+        Animated.sequence([
+            Animated.timing(battScale, { toValue: 1.12, duration: 180, useNativeDriver: true }),
+            Animated.timing(battScale, { toValue: 1, duration: 180, useNativeDriver: true }),
+        ]).start(() => setShowBatt(true));
+    };
+
     const diagTranslateY = diagAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [SCREEN_HEIGHT, 0],
+    });
+
+    const battTranslateY = battAnim.interpolate({
         inputRange: [0, 1],
         outputRange: [SCREEN_HEIGHT, 0],
     });
@@ -72,9 +96,9 @@ export default function Dashboard() {
         outputRange: [SCREEN_HEIGHT, 0],
     });
 
-    const mainScale = Animated.add(diagAnim, settingsAnim).interpolate({
-        inputRange: [0, 1, 2],
-        outputRange: [1, 0.95, 0.92],
+    const mainScale = Animated.add(diagAnim, Animated.add(settingsAnim, battAnim)).interpolate({
+        inputRange: [0, 1, 3],
+        outputRange: [1, 0.95, 0.9],
     });
 
     return (
@@ -112,7 +136,7 @@ export default function Dashboard() {
                         </View>
                         <View style={S.imageContainer}>
                             <Animated.Image
-                                source={require('../../assets/scooter_side.jpeg')}
+                                source={require('../../assets/scooter_side1.png')}
                                 style={[S.scooterImage, { transform: [{ scale: imgScale }] }]}
                             />
                         </View>
@@ -165,7 +189,11 @@ export default function Dashboard() {
                         </TouchableOpacity>
 
                         {/* Battery card */}
-                        <View style={S.batteryCard}>
+                        <TouchableOpacity
+                            activeOpacity={1}
+                            onPress={onPressBattery}
+                            style={S.batteryCard}
+                        >
                             {/* Wave fill background */}
                             <View style={S.waveBackground}>
                                 <View style={[S.waveFill, { height: `${voltPct}%`, backgroundColor: 'rgba(184,232,64,0.14)' }]}>
@@ -177,11 +205,14 @@ export default function Dashboard() {
 
                             <Text style={S.battEnergyLabel}>Battery</Text>
                             <View style={S.battContent}>
-                                <Image source={require('../../assets/scooter_front.jpeg')} style={S.battScooterImage} />
+                                <Animated.Image
+                                    source={require('../../assets/scooter_front1.png')}
+                                    style={[S.battScooterImage, { transform: [{ scale: battScale }] }]}
+                                />
                                 <Text style={[S.battPctHuge, { color: voltColor }]}>{voltPct.toFixed(0)}%</Text>
                             </View>
                             <Text style={S.powerSaveLabel}>{voltPct > 20 ? 'Standard mode' : '⚠️ Low battery'}</Text>
-                        </View>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Status Section */}
@@ -295,11 +326,63 @@ export default function Dashboard() {
 
                     <View style={S.diagScooterContainer}>
                         <Image
-                            source={require('../../assets/scooter_side.jpeg')}
+                            source={require('../../assets/scooter_side1.png')}
                             style={S.diagScooterImage}
                             width={300}
                             height={300}
                         />
+                    </View>
+                </View>
+            </Animated.View>
+
+            {/* ── Battery Analysis Overlay ── */}
+            <Animated.View
+                style={[S.diagOverlay, { transform: [{ translateY: battTranslateY }] }]}
+                pointerEvents={showBatt ? 'auto' : 'none'}
+            >
+                <View style={S.diagHeader}>
+                    <TouchableOpacity onPress={() => setShowBatt(false)} style={S.closeBtn}>
+                        <ChevronDown color={DARK} size={26} />
+                    </TouchableOpacity>
+                    <Text style={S.diagTitle}>Battery Analysis</Text>
+                    <Activity color={LIME} size={20} />
+                </View>
+
+                <View style={S.diagContent}>
+                    <View style={S.battTopSection}>
+                        <Image
+                            source={require('../../assets/scooter_top1.png')}
+                            style={S.uprightScooter}
+                        />
+                        <View style={S.battMetricsLeft}>
+                            <View style={S.miniCard}>
+                                <Text style={S.miniLabel}>Warranty</Text>
+                                <Text style={S.miniVal}>24 Months</Text>
+                            </View>
+                            <View style={S.miniCard}>
+                                <Text style={S.miniLabel}>Analysis</Text>
+                                <Text style={S.miniVal}>Healthy</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    <View style={S.battInfoGrid}>
+                        <View style={S.diagCard}>
+                            <Text style={S.diagLabel}>Temperature</Text>
+                            <Text style={S.diagValue}>32°C</Text>
+                        </View>
+                        <View style={S.diagCard}>
+                            <Text style={S.diagLabel}>Battery Life</Text>
+                            <Text style={S.diagValue}>98%</Text>
+                        </View>
+                    </View>
+
+                    <View style={S.battMainCharge}>
+                        <Text style={S.diagLabel}>Battery Charge</Text>
+                        <View style={S.horizChargeOuter}>
+                            <View style={[S.horizChargeFill, { width: `${voltPct}%`, backgroundColor: voltColor }]} />
+                        </View>
+                        <Text style={S.diagValue}>{voltPct.toFixed(0)}%</Text>
                     </View>
                 </View>
             </Animated.View>
@@ -339,13 +422,33 @@ export default function Dashboard() {
                             </View>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[S.settingsItem, { borderBottomWidth: 0 }]}>
+                        <TouchableOpacity style={[S.settingsItem, { borderBottomWidth: 1, borderBottomColor: '#f1f1f1' }]}>
                             <View style={S.settingsIconWrap}>
                                 <Shield color={DARK} size={20} />
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={S.settingsItemLabel}>Security</Text>
                                 <Text style={S.settingsItemSub}>Password, Geofence</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[S.settingsItem, { borderBottomWidth: 1, borderBottomColor: '#f1f1f1' }]}>
+                            <View style={S.settingsIconWrap}>
+                                <Lock color={DARK} size={20} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={S.settingsItemLabel}>Privacy & Legal Info</Text>
+                                <Text style={S.settingsItemSub}>Terms, Privacy Policy</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[S.settingsItem, { borderBottomWidth: 0 }]}>
+                            <View style={S.settingsIconWrap}>
+                                <Headphones color={DARK} size={20} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={S.settingsItemLabel}>Contact Us</Text>
+                                <Text style={S.settingsItemSub}>Support, Feedback</Text>
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -488,6 +591,18 @@ const S = StyleSheet.create({
 
     diagScooterContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -10 },
     diagScooterImage: { width: width * 1.1, height: 220, resizeMode: 'contain' },
+
+    // Battery Overlay Unique Styles
+    battTopSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+    uprightScooter: { width: 140, height: 280, resizeMode: 'contain', transform: [{ rotate: '90deg' }] },
+    battMetricsLeft: { gap: 12, flex: 1, paddingLeft: 20 },
+    miniCard: { backgroundColor: '#fff', borderRadius: 20, padding: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+    miniLabel: { fontSize: 10, fontWeight: '800', color: '#999', textTransform: 'uppercase' },
+    miniVal: { fontSize: 16, fontWeight: '900', color: DARK },
+    battInfoGrid: { flexDirection: 'row', gap: 16, marginBottom: 20 },
+    battMainCharge: { backgroundColor: '#fff', borderRadius: 28, padding: 20, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 15, elevation: 3 },
+    horizChargeOuter: { height: 16, backgroundColor: '#f0f0f0', borderRadius: 8, marginVertical: 12, overflow: 'hidden' },
+    horizChargeFill: { height: '100%', borderRadius: 8 },
 
     mainWrap: { flex: 1 },
     /* settings unique */
