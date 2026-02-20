@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     Animated, Dimensions, Image,
 } from 'react-native';
+import WebView from 'react-native-webview';
 import Svg, { Ellipse, Rect, Path, Text as SvgText, Circle } from 'react-native-svg';
 import { useTelematicsContext } from '../_layout';
 import { useRouter } from 'expo-router';
@@ -70,7 +71,7 @@ export default function Dashboard() {
 
                 {/* Grid Row: Charging Station + Battery */}
                 <View style={S.gridRow}>
-                    {/* Charging Station Card - Interactive Glass Look */}
+                    {/* Charging Station Card - Live Mini Map */}
                     <TouchableOpacity
                         activeOpacity={0.9}
                         onPress={() => router.push('/(tabs)/map')}
@@ -80,12 +81,43 @@ export default function Dashboard() {
                             <Text style={S.cardTitle}>Charging{"\n"}Station</Text>
                             <Map color={DARK} size={24} strokeWidth={2.5} />
                         </View>
-                        <View style={S.stationBox}>
-                            <View style={S.innerBox}>
-                                <Text style={S.distLabel}>2.4 km</Text>
+
+                        <View style={S.miniMapWrapper}>
+                            <WebView
+                                pointerEvents="none"
+                                scrollEnabled={false}
+                                source={{
+                                    html: `
+                                    <html>
+                                    <head>
+                                        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+                                        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                        <style>
+                                            * { margin:0; padding:0; }
+                                            #map { width:100%; height:100%; background:#1c1c1e; }
+                                            .leaflet-control-attribution { display:none !important; }
+                                        </style>
+                                    </head>
+                                    <body>
+                                        <div id="map"></div>
+                                        <script>
+                                            var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${p?.latitude || 12.9716}, ${p?.longitude || 77.5946}], 15);
+                                            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+                                            L.circle([${p?.latitude || 12.9716}, ${p?.longitude || 77.5946}], { color: '#B8E840', fillColor: '#B8E840', fillOpacity: 0.6, radius: 100 }).addTo(map);
+                                        </script>
+                                    </body>
+                                    </html>
+                                `}}
+                                style={S.miniMap}
+                            />
+                            <View style={S.mapOverlay}>
+                                <View style={S.innerBox}>
+                                    <Text style={S.distLabel}>NEAR BY</Text>
+                                </View>
                             </View>
                         </View>
-                        <Text style={S.cardHint}>Navigate Now →</Text>
+
+                        <Text style={S.cardHint}>Open full map →</Text>
                     </TouchableOpacity>
 
                     {/* Battery Energy Card - Wavy Flow Effect */}
@@ -108,7 +140,7 @@ export default function Dashboard() {
 
                         <View style={S.battContent}>
                             <Image
-                                source={require('../../assets/scooter_top.png')}
+                                source={require('../../assets/scooter_front.jpeg')}
                                 style={S.battScooterImage}
                             />
                             <Text style={S.battPctHuge}>{voltPct.toFixed(0)}%</Text>
@@ -207,8 +239,10 @@ const S = StyleSheet.create({
         justifyContent: 'space-between', shadowColor: LIME, shadowOpacity: 0.3, shadowRadius: 15, elevation: 5,
     },
     cardTitle: { fontSize: 17, fontWeight: '900', color: DARK, lineHeight: 20, letterSpacing: -0.5 },
-    stationBox: { width: '100%', height: 60, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.05)', alignItems: 'center', justifyContent: 'center' },
-    innerBox: { backgroundColor: DARK, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+    miniMapWrapper: { width: '100%', height: 100, borderRadius: 20, overflow: 'hidden', position: 'relative', backgroundColor: 'rgba(0,0,0,0.05)' },
+    miniMap: { width: '100%', height: '100%', opacity: 0.8 },
+    mapOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+    innerBox: { backgroundColor: DARK, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4 },
     distLabel: { color: LIME, fontSize: 12, fontWeight: '900' },
     cardHint: { fontSize: 11, color: DARK, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
 
