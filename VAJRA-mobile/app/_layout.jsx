@@ -21,6 +21,7 @@ export default function RootLayout() {
     const [voltageHistory, setVoltageHistory] = useState([]);
     const [immobActive, setImmobActive] = useState(false);
     const [ignitionActive, setIgnitionActive] = useState(true);
+    const [zones, setZones] = useState([]);   // shared geofence zones
     const [mqttStatus, setMqttStatus] = useState('simulated');
 
     useEffect(() => {
@@ -60,7 +61,7 @@ export default function RootLayout() {
     };
 
     return (
-        <TelematicsContext.Provider value={{ latestPacket, packetHistory, voltageHistory, immobActive, handleImmobToggle, mqttStatus, ignitionActive }}>
+        <TelematicsContext.Provider value={{ latestPacket, packetHistory, voltageHistory, immobActive, handleImmobToggle, mqttStatus, ignitionActive, zones, setZones }}>
             <StatusBar style="light" />
             <Stack screenOptions={{ headerShown: false }} />
         </TelematicsContext.Provider>

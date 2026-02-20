@@ -105,7 +105,8 @@ export default function ControlScreen() {
 
     const [showImmobModal, setShowImmobModal] = useState(false);
     const [pendingImmob, setPendingImmob] = useState(false);
-    const [zones, setZones] = useState([]);
+    const zones = ctx?.zones ?? [];
+    const setZones = ctx?.setZones ?? (() => { });
     const [showGeoModal, setShowGeoModal] = useState(false);
     const [geoName, setGeoName] = useState('');
     const [geoRadius, setGeoRadius] = useState('500');
