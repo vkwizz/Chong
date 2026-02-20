@@ -21,7 +21,9 @@ export default function Dashboard() {
     const router = useRouter();
     const scrollY = useRef(new Animated.Value(0)).current;
     const [showDiag, setShowDiag] = useState(false);
+    const [showBatt, setShowBatt] = useState(false);
     const diagAnim = useRef(new Animated.Value(0)).current;
+    const battAnim = useRef(new Animated.Value(0)).current;
 
     const p = ctx?.latestPacket;
     const speed = p?.speed ?? 0;
@@ -42,6 +44,14 @@ export default function Dashboard() {
         }).start();
     }, [showDiag]);
 
+    useEffect(() => {
+        Animated.timing(battAnim, {
+            toValue: showBatt ? 1 : 0,
+            duration: 500,
+            useNativeDriver: true,
+        }).start();
+    }, [showBatt]);
+
     const onPressHero = () => {
         Animated.sequence([
             Animated.timing(imgScale, { toValue: 1.15, duration: 200, useNativeDriver: true }),
@@ -54,9 +64,14 @@ export default function Dashboard() {
         outputRange: [SCREEN_HEIGHT, 0],
     });
 
-    const mainScale = diagAnim.interpolate({
+    const battTranslateY = battAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [1, 0.95],
+        outputRange: [SCREEN_HEIGHT, 0],
+    });
+
+    const mainScale = Animated.add(diagAnim, battAnim).interpolate({
+        inputRange: [0, 1, 2],
+        outputRange: [1, 0.95, 0.95],
     });
 
     return (
@@ -152,7 +167,11 @@ export default function Dashboard() {
                         </TouchableOpacity>
 
                         {/* Battery Energy Card - Wavy Flow Effect */}
-                        <View style={S.batteryCard}>
+                        <TouchableOpacity
+                            activeOpacity={0.9}
+                            onPress={() => setShowBatt(true)}
+                            style={S.batteryCard}
+                        >
                             {/* The Wave Fill Background */}
                             <View style={S.waveBackground}>
                                 <View style={[S.waveFill, { height: `${voltPct}%`, backgroundColor: 'rgba(184,232,64,0.15)' }]}>
@@ -178,7 +197,7 @@ export default function Dashboard() {
                             </View>
 
                             <Text style={S.powerSaveLabel}>{voltPct > 20 ? 'Standard mode' : 'Power saving mode'}</Text>
-                        </View>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Status Toggles Section */}
@@ -295,7 +314,64 @@ export default function Dashboard() {
                     </View>
                 </View>
             </Animated.View>
+
+            {/* Battery Details Overlay */}
+            <Animated.View style={[S.diagOverlay, { transform: [{ translateY: battTranslateY }] }]}>
+                <View style={S.diagHeader}>
+                    <TouchableOpacity onPress={() => setShowBatt(false)} style={S.closeBtn}>
+                        <ChevronDown color={DARK} size={28} />
+                    </TouchableOpacity>
+                    <Text style={S.diagTitle}>Battery Analysis</Text>
+                    <LighningIcon color={LIME} size={20} />
+                </View>
+
+                <View style={S.diagContent}>
+                    <View style={S.battTopSection}>
+                        <Image
+                            source={require('../../assets/scooter_top.png')}
+                            style={S.uprightScooter}
+                        />
+                        <View style={S.battMetricsLeft}>
+                            <View style={S.miniCard}>
+                                <Text style={S.miniLabel}>Warranty</Text>
+                                <Text style={S.miniVal}>24 Months</Text>
+                            </View>
+                            <View style={S.miniCard}>
+                                <Text style={S.miniLabel}>Analysis</Text>
+                                <Text style={S.miniVal}>Healthy</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    <View style={S.battInfoGrid}>
+                        <View style={S.diagCard}>
+                            <Text style={S.diagLabel}>Temperature</Text>
+                            <Text style={S.diagValue}>32°C</Text>
+                        </View>
+                        <View style={S.diagCard}>
+                            <Text style={S.diagLabel}>Battery Life</Text>
+                            <Text style={S.diagValue}>98%</Text>
+                        </View>
+                    </View>
+
+                    <View style={S.battMainCharge}>
+                        <Text style={S.diagLabel}>Battery Charge</Text>
+                        <View style={S.horizChargeOuter}>
+                            <View style={[S.horizChargeFill, { width: `${voltPct}%`, backgroundColor: voltColor }]} />
+                        </View>
+                        <Text style={S.diagValue}>{voltPct.toFixed(0)}%</Text>
+                    </View>
+                </View>
+            </Animated.View>
         </View>
+    );
+}
+
+function LighningIcon({ color, size }) {
+    return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+        </Svg>
     );
 }
 
@@ -402,4 +478,16 @@ const S = StyleSheet.create({
     diagoText: { fontSize: 13, fontWeight: '700', color: DARK },
     diagScooterContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -20 },
     diagScooterImage: { width: width * 1.2, height: 260, resizeMode: 'contain' },
+
+    // Battery Overly Unique Styles
+    battTopSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+    uprightScooter: { width: 120, height: 240, resizeMode: 'contain', transform: [{ rotate: '0deg' }] },
+    battMetricsLeft: { gap: 12, flex: 1, paddingLeft: 20 },
+    miniCard: { backgroundColor: '#fff', borderRadius: 20, padding: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+    miniLabel: { fontSize: 10, fontWeight: '800', color: '#999', textTransform: 'uppercase' },
+    miniVal: { fontSize: 16, fontWeight: '900', color: DARK },
+    battInfoGrid: { flexDirection: 'row', gap: 16, marginBottom: 20 },
+    battMainCharge: { backgroundColor: '#fff', borderRadius: 28, padding: 20, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 15, elevation: 3 },
+    horizChargeOuter: { height: 16, backgroundColor: '#f0f0f0', borderRadius: 8, marginVertical: 12, overflow: 'hidden' },
+    horizChargeFill: { height: '100%', borderRadius: 8 },
 });
