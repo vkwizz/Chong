@@ -8,55 +8,12 @@ import { useTelematicsContext } from '../_layout';
 import { useRouter } from 'expo-router';
 import { Shield, FileSearch, Map, User } from 'lucide-react-native';
 
-const { width } = Dimensions.get('window');
+const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const LIME = '#B8E840';
 const DARK = '#1C1C1E';
 const CREAM = '#F2EDE8';
 
-function EVScooterSVG({ immob }) {
-    return (
-        <Svg viewBox="0 0 160 360" width={160} height={280}>
-            {/* Rear wheel */}
-            <Ellipse cx="80" cy="332" rx="26" ry="14" fill="#1a1a1a" />
-            <Ellipse cx="80" cy="332" rx="16" ry="8" fill="#2e2e2e" />
-            <Ellipse cx="80" cy="332" rx="7" ry="4" fill="#444" />
-            {/* Body rear */}
-            <Path d="M54 308 Q50 275 48 222 L112 222 Q110 275 106 308 Z" fill="#C0C0B4" />
-            {/* Main body */}
-            <Rect x="44" y="100" width="72" height="132" rx="22" fill="#D4D4C8" />
-            {/* Body highlight */}
-            <Rect x="74" y="108" width="10" height="116" rx="5" fill="rgba(255,255,255,0.28)" />
-            {/* Seat */}
-            <Rect x="52" y="188" width="56" height="66" rx="14" fill="#AAAAA0" />
-            <Rect x="58" y="196" width="44" height="50" rx="10" fill="#989890" />
-            {/* Footrest */}
-            <Rect x="36" y="152" width="88" height="44" rx="12" fill="#C6C6BA" />
-            {/* EV label */}
-            <SvgText x="80" y="178" fontSize="18" textAnchor="middle" fill={LIME}>⚡</SvgText>
-            {/* Frame neck */}
-            <Rect x="62" y="74" width="36" height="34" rx="11" fill="#CACABE" />
-            {/* Handlebar */}
-            <Rect x="72" y="54" width="16" height="26" rx="5" fill="#999" />
-            <Rect x="24" y="48" width="112" height="13" rx="6" fill="#5a5a5a" />
-            {/* Left grip — red if immob */}
-            <Rect x="16" y="45" width="18" height="20" rx="7" fill={immob ? '#ef4444' : '#3a3a3a'} />
-            <Rect x="126" y="45" width="18" height="20" rx="7" fill="#3a3a3a" />
-            {/* Front fork */}
-            <Rect x="68" y="22" width="24" height="32" rx="6" fill="#B0B0A8" />
-            {/* Front wheel */}
-            <Ellipse cx="80" cy="18" rx="26" ry="14" fill="#1a1a1a" />
-            <Ellipse cx="80" cy="18" rx="16" ry="8" fill="#2e2e2e" />
-            <Ellipse cx="80" cy="18" rx="7" ry="4" fill="#444" />
-            {/* Headlight */}
-            <Ellipse cx="80" cy="8" rx="13" ry="7" fill={LIME} />
-            <Ellipse cx="80" cy="8" rx="8" ry="4" fill="rgba(255,255,255,0.7)" />
-            {/* Brake light */}
-            <Ellipse cx="80" cy="322" rx="10" ry="4" fill={immob ? '#ef4444' : '#f87171'} />
-            <Circle cx="58" cy="314" r="4" fill={immob ? '#ef4444' : '#f87171'} />
-            <Circle cx="102" cy="314" r="4" fill={immob ? '#ef4444' : '#f87171'} />
-        </Svg>
-    );
-}
+// Side-scooter design implemented with high-res Image
 
 export default function Dashboard() {
     const ctx = useTelematicsContext();
