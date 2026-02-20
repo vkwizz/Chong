@@ -6,7 +6,7 @@ import {
 import Svg, { Ellipse, Rect, Path, Text as SvgText, Circle } from 'react-native-svg';
 import { useTelematicsContext } from '../_layout';
 import { useRouter } from 'expo-router';
-import { Shield, FileSearch } from 'lucide-react-native';
+import { Shield, FileSearch, Map, User } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 const LIME = '#B8E840';
@@ -80,7 +80,7 @@ export default function Dashboard() {
                     <Text style={S.headerTitle}>Vajra Driver</Text>
                 </View>
                 <View style={S.profileCircle}>
-                    <Circle size={32} color={DARK} fill={DARK} />
+                    <User size={32} color={DARK} style={{ alignSelf: 'center', marginTop: 10 }} />
                     <View style={S.profilePlaceholder} />
                 </View>
             </View>
