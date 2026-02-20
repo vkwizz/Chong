@@ -68,40 +68,20 @@ export default function Dashboard() {
     const ign = p?.ignitionStatus === 1;
     const immob = ctx?.immobActive ?? false;
     const volt = p?.analogVoltage ?? 0;
-    const sig = p?.signalStrength ?? 0;
-    const fix = p?.fixStatus === 1;
-    const oper = p?.operator ?? 'Airtel';
-    const frame = p?.frameNumber ?? '--';
-    const lat = p?.latitude?.toFixed(5) ?? '--';
-    const lon = p?.longitude?.toFixed(5) ?? '--';
-    const imei = p?.imei ?? '887744556677882';
     const voltPct = Math.min(100, (volt / 5) * 100);
     const voltColor = volt < 2 ? '#ef4444' : volt < 3.5 ? '#f59e0b' : LIME;
-    const bars = sig >= 25 ? 4 : sig >= 18 ? 3 : sig >= 10 ? 2 : sig >= 4 ? 1 : 0;
-
-    const scooterY = scrollY.interpolate({ inputRange: [0, 200], outputRange: [0, 60], extrapolate: 'clamp' });
-    const scooterScale = scrollY.interpolate({ inputRange: [0, 200], outputRange: [1, 1.1], extrapolate: 'clamp' });
-    const scooterOpacity = scrollY.interpolate({ inputRange: [0, 180], outputRange: [1, 0.3], extrapolate: 'clamp' });
 
     return (
         <View style={S.root}>
-            {/* Sticky header */}
+            {/* Header: Hello [User] + Profile Icon */}
             <View style={S.header}>
                 <View>
-                    <Text style={S.headerSub}>Smart Telematics</Text>
-                    <Text style={S.headerTitle}>VAJRA <Text style={S.headerGray}>Fleet</Text></Text>
+                    <Text style={S.headerSub}>Hello,</Text>
+                    <Text style={S.headerTitle}>Vajra Driver</Text>
                 </View>
-                <View style={S.headerRight}>
-                    {/* Signal bars */}
-                    <View style={S.signalWrap}>
-                        {[4, 7, 11, 16].map((h, i) => (
-                            <View key={i} style={[S.sigBar, { height: h, backgroundColor: i < bars ? LIME : '#ddd' }]} />
-                        ))}
-                    </View>
-                    <View style={S.livePill}>
-                        <View style={S.liveDot} />
-                        <Text style={S.liveText}>LIVE</Text>
-                    </View>
+                <View style={S.profileCircle}>
+                    <Circle size={32} color={DARK} fill={DARK} />
+                    <View style={S.profilePlaceholder} />
                 </View>
             </View>
 
@@ -109,146 +89,94 @@ export default function Dashboard() {
                 onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={S.scrollContent}
             >
-                {/* Hero */}
-                <View style={S.hero}>
-                    <View style={S.heroTitleWrap}>
-                        <Text style={S.heroTitle}>VAJRA-1</Text>
-                        <Text style={S.heroSub}>ESP32 Smart Telematics · ···{String(imei).slice(-6)}</Text>
-                    </View>
-                    <Animated.View style={[S.scooterWrap, { transform: [{ translateY: scooterY }, { scale: scooterScale }], opacity: scooterOpacity }]}>
-                        {/* Glow */}
-                        <View style={[S.glowRing, { borderColor: immob ? 'rgba(239,68,68,0.3)' : 'rgba(184,232,64,0.3)' }]} />
-                        <Image
-                            source={require('../../assets/scooter_top.png')}
-                            style={{ width: 180, height: 280, resizeMode: 'contain' }}
-                        />
-                    </Animated.View>
-                    {/* Status badges */}
-                    <View style={S.badgeRow}>
-                        <View style={[S.badge, { backgroundColor: ign ? '#1a1a1a' : '#e8e2da' }]}>
-                            <View style={[S.badgeDot, { backgroundColor: ign ? LIME : '#bbb' }]} />
-                            <Text style={[S.badgeText, { color: ign ? LIME : '#999' }]}>IGN {ign ? 'ON' : 'OFF'}</Text>
-                        </View>
-                        <View style={[S.badge, { backgroundColor: immob ? '#ef4444' : '#1a1a1a' }]}>
-                            <Text style={[S.badgeText, { color: 'white' }]}>🔒 {immob ? 'IMMOB' : 'READY'}</Text>
-                        </View>
-                        <View style={[S.badge, { backgroundColor: LIME }]}>
-                            <Text style={[S.badgeText, { color: '#1a1a1a' }]}>{speed.toFixed(0)} km/h</Text>
-                        </View>
-                    </View>
+                {/* Hero Card: "Chong" + Side Scooter Image */}
+                <View style={S.heroCard}>
+                    <Text style={S.chongText}>Chong</Text>
+                    <Image
+                        source={require('../../assets/scooter_side.png')}
+                        style={S.scooterImage}
+                    />
                 </View>
 
-                {/* Cards */}
-                <View style={S.cards}>
-
-                    {/* DI + DO */}
-                    <View style={S.row2}>
-                        <View style={[S.cardDark, { flex: 1 }]}>
-                            <Text style={S.cardLabel}>Digital Input</Text>
-                            <Text style={[S.cardBig, { color: ign ? LIME : '#3a3a3a' }]}>{ign ? 'ON' : 'OFF'}</Text>
-                            <Text style={S.cardSub}>Ignition Signal</Text>
-                            <Text style={S.mono}>DI1 = {ign ? 'HIGH (1)' : 'LOW (0)'}</Text>
+                {/* Grid Row: Charging Station + Battery */}
+                <View style={S.gridRow}>
+                    {/* Charging Station Card */}
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => router.push('/(tabs)/map')}
+                        style={S.chargingCard}
+                    >
+                        <Text style={S.cardTitle}>Charging{"\n"}Station</Text>
+                        <View style={S.stationBox}>
+                            <Map color={DARK} size={30} strokeWidth={1.5} />
                         </View>
-                        <View style={[S.cardDark, { flex: 1, backgroundColor: immob ? '#ef4444' : DARK }]}>
-                            <Text style={[S.cardLabel, { color: immob ? 'rgba(255,255,255,0.6)' : '#555' }]}>Digital Output</Text>
-                            <Text style={[S.cardBig, { color: immob ? 'white' : '#3a3a3a' }]}>{immob ? 'ON' : 'OFF'}</Text>
-                            <Text style={[S.cardSub, { color: immob ? 'rgba(255,255,255,0.7)' : '#666' }]}>Immobilizer</Text>
-                            <Text style={[S.mono, { color: immob ? 'rgba(255,255,255,0.6)' : '#444' }]}>DO1 = {immob ? 'HIGH (1)' : 'LOW (0)'}</Text>
-                        </View>
-                    </View>
-
-                    {/* Voltage card */}
-                    <View style={S.cardDark}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View style={{ flex: 1 }}>
-                                <Text style={S.cardLabel}>Analog Input (AI) — 0–5V</Text>
-                                <Text style={[S.voltBig, { color: voltColor }]}>{volt.toFixed(1)} <Text style={{ fontSize: 18, color: '#444', fontWeight: '500' }}>V</Text></Text>
-                                <View style={S.voltTrack}>
-                                    <View style={[S.voltFill, { width: `${voltPct}%`, backgroundColor: voltColor }]} />
-                                </View>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                                    <Text style={S.axisLabel}>0V</Text><Text style={S.axisLabel}>5V</Text>
-                                </View>
-                            </View>
-                            {/* Vertical battery bar */}
-                            <View style={S.battWrap}>
-                                <Text style={[S.battPct, { color: voltColor }]}>{voltPct.toFixed(0)}%</Text>
-                                <View style={S.battNub} />
-                                <View style={S.battOuter}>
-                                    <View style={[S.battFill, { height: `${voltPct}%`, backgroundColor: voltColor }]} />
-                                </View>
-                                <Text style={S.battLabel}>AI1</Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* Info trio */}
-                    <View style={S.row3}>
-                        {[
-                            { label: 'Operator', val: oper, icon: '📡' },
-                            { label: 'GPS Fix', val: fix ? 'FIXED' : 'NO FIX', icon: '🛰️', c: fix ? LIME : '#ef4444' },
-                            { label: 'Frame', val: `#${frame}`, icon: '📦', c: '#888' },
-                        ].map(({ label, val, icon, c }) => (
-                            <View key={label} style={[S.cardLight, { flex: 1 }]}>
-                                <Text style={{ fontSize: 20, marginBottom: 6 }}>{icon}</Text>
-                                <Text style={[S.cardBigSm, { color: c ?? '#1a1a1a' }]}>{val}</Text>
-                                <Text style={S.miniLabel}>{label}</Text>
-                            </View>
-                        ))}
-                    </View>
-
-                    {/* Location card */}
-                    <TouchableOpacity activeOpacity={0.8} onPress={() => router.push('/(tabs)/map')} style={S.cardDark}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View>
-                                <Text style={S.cardLabel}>📍 Location</Text>
-                                <Text style={[S.mono, { color: LIME, fontSize: 14, marginTop: 6 }]}>{lat}° N</Text>
-                                <Text style={[S.mono, { color: LIME, fontSize: 14, marginTop: 4 }]}>{lon}° E</Text>
-                            </View>
-                            <View style={{ alignItems: 'flex-end' }}>
-                                <Text style={S.cardLabel}>SPEED</Text>
-                                <Text style={[S.cardBig, { color: 'white', fontSize: 42 }]}>{speed.toFixed(0)}</Text>
-                                <Text style={S.cardSub}>km/h</Text>
-                            </View>
-                        </View>
-                        <View style={S.divider} />
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View style={{ flexDirection: 'row', gap: 20 }}>
-                                {[['HDOP', p?.hdop?.toFixed(2) ?? '1.20'], ['PDOP', p?.pdop?.toFixed(2) ?? '1.80']].map(([k, v]) => (
-                                    <View key={k}>
-                                        <Text style={S.miniLabel}>{k}</Text>
-                                        <Text style={[S.cardSub, { fontWeight: '700' }]}>{v}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                            <Text style={[S.cardSub, { color: LIME, fontWeight: '800' }]}>View Map →</Text>
-                        </View>
+                        <Text style={S.cardHint}>Find nearest</Text>
                     </TouchableOpacity>
 
-                    {/* Action buttons */}
-                    <View style={S.row2}>
-                        <TouchableOpacity onPress={() => router.push('/(tabs)/control')} activeOpacity={0.8}
-                            style={[S.actionBtn, { backgroundColor: immob ? '#ef4444' : LIME, flex: 1 }]}>
-                            <Shield size={20} color={immob ? 'white' : '#1a1a1a'} />
-                            <Text style={[S.actionText, { color: immob ? 'white' : '#1a1a1a' }]}>Control</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => router.push('/(tabs)/packet')} activeOpacity={0.8}
-                            style={[S.actionBtn, { backgroundColor: 'white', flex: 1 }]}>
-                            <FileSearch size={20} color="#1a1a1a" />
-                            <Text style={[S.actionText, { color: '#1a1a1a' }]}>Packets</Text>
-                        </TouchableOpacity>
+                    {/* Battery Vertical Indicator */}
+                    <View style={S.batteryCard}>
+                        <Text style={S.cardTitle}>Battery</Text>
+                        <View style={S.battContainer}>
+                            <View style={S.battOuter}>
+                                <View style={[S.battFill, { height: `${voltPct}%`, backgroundColor: voltColor }]} />
+                            </View>
+                            <View style={S.battLabelSide}>
+                                <Text style={[S.battPctText, { color: voltColor }]}>{voltPct.toFixed(0)}%</Text>
+                                <Text style={S.battStatus}>{ign ? 'Discharging' : 'Standby'}</Text>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Status Toggles Section */}
+                <View style={S.statusSection}>
+                    <View style={S.statusRow}>
+                        <View>
+                            <Text style={S.statusLabel}>Ignition Signal</Text>
+                            <Text style={S.statusSub}>Digital Input (DI1)</Text>
+                        </View>
+                        <View style={S.toggleWrap}>
+                            <Text style={[S.toggleLabel, ign && S.toggleActive]}>ON</Text>
+                            <View style={S.toggleDivider} />
+                            <Text style={[S.toggleLabel, !ign && S.toggleActiveRed]}>OFF</Text>
+                        </View>
                     </View>
 
-                    {/* UTC time */}
-                    <View style={S.cardLight}>
-                        <Text style={S.cardLabel}>🕐 UTC Timestamp</Text>
-                        <Text style={[S.mono, { color: '#666', fontSize: 11, marginTop: 4 }]}>
-                            {p?.dateTimeFormatted?.slice(0, 28) ?? new Date().toUTCString()}
-                        </Text>
+                    <View style={S.statusRow}>
+                        <View>
+                            <Text style={S.statusLabel}>Immobilizer</Text>
+                            <Text style={S.statusSub}>Digital Output (DO1)</Text>
+                        </View>
+                        <View style={S.toggleWrap}>
+                            <Text style={[S.toggleLabel, immob && S.toggleActiveRed]}>ON</Text>
+                            <View style={S.toggleDivider} />
+                            <Text style={[S.toggleLabel, !immob && S.toggleActive]}>OFF</Text>
+                        </View>
                     </View>
-                    <View style={{ height: 16 }} />
                 </View>
+
+                {/* Quick Action Buttons */}
+                <View style={S.actionRow}>
+                    <TouchableOpacity
+                        onPress={() => router.push('/(tabs)/control')}
+                        style={[S.quickBtn, { backgroundColor: DARK }]}
+                    >
+                        <Shield color={LIME} size={18} />
+                        <Text style={S.quickBtnText}>Control</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => router.push('/(tabs)/packet')}
+                        style={[S.quickBtn, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd' }]}
+                    >
+                        <FileSearch color={DARK} size={18} />
+                        <Text style={[S.quickBtnText, { color: DARK }]}>Packet</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={{ height: 40 }} />
             </Animated.ScrollView>
         </View>
     );
@@ -257,51 +185,50 @@ export default function Dashboard() {
 const S = StyleSheet.create({
     root: { flex: 1, backgroundColor: CREAM },
     header: {
-        paddingHorizontal: 20, paddingTop: 56, paddingBottom: 12,
-        backgroundColor: CREAM, flexDirection: 'row',
-        alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 24, paddingTop: 60, paddingBottom: 20,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     },
-    headerSub: { fontSize: 10, color: '#aaa', fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
-    headerTitle: { fontSize: 24, fontWeight: '900', color: '#1a1a1a', letterSpacing: -0.5, marginTop: 2 },
-    headerGray: { color: '#bbb', fontWeight: '400' },
-    headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    signalWrap: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 17 },
-    sigBar: { width: 4, borderRadius: 2 },
-    livePill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1a1a1a', borderRadius: 100, paddingHorizontal: 12, paddingVertical: 6, gap: 6 },
-    liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: LIME },
-    liveText: { fontSize: 10, fontWeight: '800', color: LIME, letterSpacing: 0.5 },
-    hero: { backgroundColor: '#EAE4DC', paddingHorizontal: 24, paddingTop: 8, alignItems: 'center', minHeight: 320 },
-    heroTitleWrap: { alignSelf: 'flex-start', marginBottom: 8 },
-    heroTitle: { fontSize: 28, fontWeight: '900', color: '#1a1a1a', letterSpacing: -0.6 },
-    heroSub: { fontSize: 12, color: '#999', marginTop: 2 },
-    scooterWrap: { width: 170, alignItems: 'center', position: 'relative', marginBottom: 8 },
-    glowRing: { position: 'absolute', width: 200, height: 200, borderRadius: 100, borderWidth: 2, top: 20, alignSelf: 'center' },
-    badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 20, flexWrap: 'wrap', justifyContent: 'center' },
-    badge: { flexDirection: 'row', alignItems: 'center', borderRadius: 100, paddingHorizontal: 14, paddingVertical: 7, gap: 6 },
-    badgeDot: { width: 7, height: 7, borderRadius: 4 },
-    badgeText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
-    cards: { paddingHorizontal: 16, paddingTop: 16, gap: 10 },
-    row2: { flexDirection: 'row', gap: 10 },
-    row3: { flexDirection: 'row', gap: 8 },
-    cardDark: { backgroundColor: DARK, borderRadius: 22, padding: 18, gap: 4 },
-    cardLight: { backgroundColor: 'white', borderRadius: 22, padding: 18, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
-    cardLabel: { fontSize: 10, color: '#555', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 },
-    cardBig: { fontSize: 32, fontWeight: '900', lineHeight: 36 },
-    cardBigSm: { fontSize: 13, fontWeight: '900', lineHeight: 16 },
-    cardSub: { fontSize: 11, color: '#666', marginTop: 2 },
-    mono: { fontFamily: 'Courier', fontSize: 10, color: '#444', marginTop: 2 },
-    voltBig: { fontSize: 40, fontWeight: '900', letterSpacing: -1, lineHeight: 46 },
-    voltTrack: { backgroundColor: '#2a2a2a', borderRadius: 8, height: 10, marginTop: 12, overflow: 'hidden' },
-    voltFill: { height: '100%', borderRadius: 8 },
-    axisLabel: { fontSize: 9, color: '#444' },
-    battWrap: { alignItems: 'center', gap: 4, marginLeft: 16 },
-    battPct: { fontSize: 13, fontWeight: '900' },
-    battNub: { width: 16, height: 5, backgroundColor: '#444', borderRadius: 4 },
-    battOuter: { width: 32, height: 80, backgroundColor: '#2a2a2a', borderRadius: 8, overflow: 'hidden', borderWidth: 1.5, borderColor: '#3a3a3a', justifyContent: 'flex-end' },
+    headerSub: { fontSize: 13, color: '#999', fontWeight: '600' },
+    headerTitle: { fontSize: 22, fontWeight: '900', color: DARK },
+    profileCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ddd', overflow: 'hidden', position: 'relative' },
+    profilePlaceholder: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.05)' },
+    scrollContent: { paddingHorizontal: 24 },
+    heroCard: {
+        backgroundColor: '#fff', borderRadius: 32, padding: 24, height: 260,
+        shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 20, elevation: 5,
+        marginBottom: 20, overflow: 'hidden', justifyContent: 'space-between',
+    },
+    chongText: { fontSize: 32, fontWeight: '800', color: DARK, letterSpacing: -1 },
+    scooterImage: { width: '100%', height: 180, resizeMode: 'contain', marginTop: -20 },
+    gridRow: { flexDirection: 'row', gap: 16, marginBottom: 20 },
+    chargingCard: {
+        flex: 1, backgroundColor: LIME, borderRadius: 28, padding: 20,
+        height: 180, justifyContent: 'space-between',
+    },
+    cardTitle: { fontSize: 16, fontWeight: '800', color: DARK, lineHeight: 18 },
+    stationBox: { width: 60, height: 60, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center' },
+    cardHint: { fontSize: 11, color: DARK, opacity: 0.6, fontWeight: '600' },
+    batteryCard: {
+        flex: 1, backgroundColor: '#fff', borderRadius: 28, padding: 20,
+        height: 180, justifyContent: 'space-between',
+        shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, elevation: 2,
+    },
+    battContainer: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, flex: 1, marginTop: 10 },
+    battOuter: { width: 28, height: '90%', backgroundColor: '#f0f0f0', borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: '#eee', justifyContent: 'flex-end' },
     battFill: { width: '100%', borderRadius: 6 },
-    battLabel: { fontSize: 9, color: '#555', fontWeight: '700' },
-    miniLabel: { fontSize: 9, color: '#aaa', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 4 },
-    divider: { height: 1, backgroundColor: '#2a2a2a', marginVertical: 12 },
-    actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 18, paddingVertical: 16, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
-    actionText: { fontSize: 14, fontWeight: '800' },
+    battLabelSide: { flex: 1, paddingBottom: 5 },
+    battPctText: { fontSize: 24, fontWeight: '900' },
+    battStatus: { fontSize: 9, color: '#999', fontWeight: '700', textTransform: 'uppercase' },
+    statusSection: { backgroundColor: '#fff', borderRadius: 28, padding: 20, marginBottom: 20 },
+    statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
+    statusLabel: { fontSize: 14, fontWeight: '800', color: DARK },
+    statusSub: { fontSize: 10, color: '#aaa', fontWeight: '500', marginTop: 2 },
+    toggleWrap: { flexDirection: 'row', backgroundColor: '#f0f0f0', borderRadius: 100, padding: 4, alignItems: 'center' },
+    toggleLabel: { fontSize: 10, fontWeight: '800', color: '#bbb', paddingHorizontal: 12, paddingVertical: 6 },
+    toggleDivider: { width: 1, height: 10, backgroundColor: '#ddd' },
+    toggleActive: { color: DARK, backgroundColor: LIME, borderRadius: 100 },
+    toggleActiveRed: { color: '#fff', backgroundColor: '#ef4444', borderRadius: 100 },
+    actionRow: { flexDirection: 'row', gap: 12 },
+    quickBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 56, borderRadius: 100 },
+    quickBtnText: { color: LIME, fontSize: 15, fontWeight: '800' },
 });
