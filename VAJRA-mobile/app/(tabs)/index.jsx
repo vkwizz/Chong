@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     Animated, Dimensions, Image,
@@ -7,7 +7,7 @@ import WebView from 'react-native-webview';
 import Svg, { Ellipse, Rect, Path, Text as SvgText, Circle } from 'react-native-svg';
 import { useTelematicsContext } from '../_layout';
 import { useRouter } from 'expo-router';
-import { Shield, FileSearch, Map, User } from 'lucide-react-native';
+import { Shield, FileSearch, Map, User, ChevronDown, Activity, Calendar, Compass, Gauge } from 'lucide-react-native';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const LIME = '#B8E840';
@@ -20,74 +20,96 @@ export default function Dashboard() {
     const ctx = useTelematicsContext();
     const router = useRouter();
     const scrollY = useRef(new Animated.Value(0)).current;
+    const [showDiag, setShowDiag] = useState(false);
+    const diagAnim = useRef(new Animated.Value(0)).current;
 
     const p = ctx?.latestPacket;
     const speed = p?.speed ?? 0;
+    const odemeter = p?.totalDistance ?? 427.5;
     const ign = p?.ignitionStatus === 1;
     const immob = ctx?.immobActive ?? false;
     const volt = p?.analogVoltage ?? 0;
     const voltPct = Math.min(100, (volt / 5) * 100);
     const voltColor = volt < 2 ? '#ef4444' : volt < 3.5 ? '#f59e0b' : LIME;
 
+    useEffect(() => {
+        Animated.timing(diagAnim, {
+            toValue: showDiag ? 1 : 0,
+            duration: 500,
+            useNativeDriver: true,
+        }).start();
+    }, [showDiag]);
+
+    const diagTranslateY = diagAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [SCREEN_HEIGHT, 0],
+    });
+
+    const mainScale = diagAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1, 0.95],
+    });
+
     return (
         <View style={S.root}>
-            {/* Header: Hello [User] + Profile Icon */}
-            <View style={S.header}>
-                <View>
-                    <Text style={S.headerSub}>Hello,</Text>
-                    <Text style={S.headerTitle}>VK</Text>
+            <Animated.View style={[S.mainWrap, { transform: [{ scale: mainScale }] }]}>
+                {/* Header: Hello [User] + Profile Icon */}
+                <View style={S.header}>
+                    <View>
+                        <Text style={S.headerSub}>Hello,</Text>
+                        <Text style={S.headerTitle}>VK</Text>
+                    </View>
+                    <View style={S.profileCircle}>
+                        <User size={32} color={DARK} style={{ alignSelf: 'center', marginTop: 10 }} />
+                        <View style={S.profilePlaceholder} />
+                    </View>
                 </View>
-                <View style={S.profileCircle}>
-                    <User size={32} color={DARK} style={{ alignSelf: 'center', marginTop: 10 }} />
-                    <View style={S.profilePlaceholder} />
-                </View>
-            </View>
 
-            <Animated.ScrollView
-                onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
-                scrollEventThrottle={16}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={S.scrollContent}
-            >
-                {/* Hero Card: "Chong" Luxury Section */}
-                <View style={S.heroCard}>
-                    <View style={S.chongHeader}>
-                        <Text style={S.chongText}>Chong</Text>
-                        <View style={S.premiumBadge}>
-                            <Text style={S.premiumText}>PREMIUM</Text>
+                <Animated.ScrollView
+                    onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
+                    scrollEventThrottle={16}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={S.scrollContent}
+                >
+                    {/* Hero Card: "Chong" Luxury Section */}
+                    <TouchableOpacity activeOpacity={0.9} onPress={() => setShowDiag(true)} style={S.heroCard}>
+                        <View style={S.chongHeader}>
+                            <Text style={S.chongText}>Chong</Text>
+                            <View style={S.premiumBadge}>
+                                <Text style={S.premiumText}>PREMIUM</Text>
+                            </View>
                         </View>
-                    </View>
-                    <View style={S.imageContainer}>
-                        <View style={S.scooterGlow} />
-                        <Image
-                            source={require('../../assets/scooter_side.jpeg')}
-                            style={S.scooterImage}
-                        />
-                    </View>
-                    <View style={S.chongFooter}>
-                        <Text style={S.scooterModel}>GTS Super 300</Text>
-                    </View>
-                </View>
-
-                {/* Grid Row: Charging Station + Battery */}
-                <View style={S.gridRow}>
-                    {/* Charging Station Card - Live Mini Map */}
-                    <TouchableOpacity
-                        activeOpacity={0.9}
-                        onPress={() => router.push('/(tabs)/map')}
-                        style={S.chargingCard}
-                    >
-                        <View style={S.cardHeader}>
-                            <Text style={S.cardTitle}>Charging{"\n"}Station</Text>
-                            <Map color={DARK} size={24} strokeWidth={2.5} />
+                        <View style={S.imageContainer}>
+                            <View style={S.scooterGlow} />
+                            <Image
+                                source={require('../../assets/scooter_side.jpeg')}
+                                style={S.scooterImage}
+                            />
                         </View>
+                        <View style={S.chongFooter}>
+                            <Text style={S.scooterModel}>GTS Super 300</Text>
+                        </View>
+                    </TouchableOpacity>
 
-                        <View style={S.miniMapWrapper}>
-                            <WebView
-                                pointerEvents="none"
-                                scrollEnabled={false}
-                                source={{
-                                    html: `
+                    {/* Grid Row: Charging Station + Battery */}
+                    <View style={S.gridRow}>
+                        {/* Charging Station Card - Live Mini Map */}
+                        <TouchableOpacity
+                            activeOpacity={0.9}
+                            onPress={() => router.push('/(tabs)/map')}
+                            style={S.chargingCard}
+                        >
+                            <View style={S.cardHeader}>
+                                <Text style={S.cardTitle}>Charging{"\n"}Station</Text>
+                                <Map color={DARK} size={24} strokeWidth={2.5} />
+                            </View>
+
+                            <View style={S.miniMapWrapper}>
+                                <WebView
+                                    pointerEvents="none"
+                                    scrollEnabled={false}
+                                    source={{
+                                        html: `
                                     <html>
                                     <head>
                                         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -108,102 +130,169 @@ export default function Dashboard() {
                                     </body>
                                     </html>
                                 `}}
-                                style={S.miniMap}
-                            />
-                            <View style={S.mapOverlay}>
-                                <View style={S.innerBox}>
-                                    <Text style={S.distLabel}>NEAR BY</Text>
+                                    style={S.miniMap}
+                                />
+                                <View style={S.mapOverlay}>
+                                    <View style={S.innerBox}>
+                                        <Text style={S.distLabel}>NEAR BY</Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            <Text style={S.cardHint}>Open full map →</Text>
+                        </TouchableOpacity>
+
+                        {/* Battery Energy Card - Wavy Flow Effect */}
+                        <View style={S.batteryCard}>
+                            {/* The Wave Fill Background */}
+                            <View style={S.waveBackground}>
+                                <View style={[S.waveFill, { height: `${voltPct}%`, backgroundColor: 'rgba(184,232,64,0.15)' }]}>
+                                    <Svg height="24" width="150%" viewBox="0 0 100 20" style={S.waveSvg}>
+                                        <Path
+                                            d="M0 10 Q 25 20 50 10 T 100 10"
+                                            fill="none"
+                                            stroke="rgba(184,232,64,0.3)"
+                                            strokeWidth="2"
+                                        />
+                                    </Svg>
+                                </View>
+                            </View>
+
+                            <Text style={S.battEnergyLabel}>Battery energy</Text>
+
+                            <View style={S.battContent}>
+                                <Image
+                                    source={require('../../assets/scooter_front.jpeg')}
+                                    style={S.battScooterImage}
+                                />
+                                <Text style={S.battPctHuge}>{voltPct.toFixed(0)}%</Text>
+                            </View>
+
+                            <Text style={S.powerSaveLabel}>{voltPct > 20 ? 'Standard mode' : 'Power saving mode'}</Text>
+                        </View>
+                    </View>
+
+                    {/* Status Toggles Section */}
+                    <View style={S.statusSection}>
+                        <View style={S.statusRow}>
+                            <View>
+                                <Text style={S.statusLabel}>Ignition Signal</Text>
+                                <Text style={S.statusSub}>Digital Input (DI1)</Text>
+                            </View>
+                            <View style={S.toggleWrap}>
+                                <Text style={[S.toggleLabel, ign && S.toggleActive]}>ON</Text>
+                                <View style={S.toggleDivider} />
+                                <Text style={[S.toggleLabel, !ign && S.toggleActiveRed]}>OFF</Text>
+                            </View>
+                        </View>
+
+                        <View style={S.statusRow}>
+                            <View>
+                                <Text style={S.statusLabel}>Immobilizer</Text>
+                                <Text style={S.statusSub}>Digital Output (DO1)</Text>
+                            </View>
+                            <View style={S.toggleWrap}>
+                                <Text style={[S.toggleLabel, immob && S.toggleActiveRed]}>ON</Text>
+                                <View style={S.toggleDivider} />
+                                <Text style={[S.toggleLabel, !immob && S.toggleActive]}>OFF</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Quick Action Buttons */}
+                    <View style={S.actionRow}>
+                        <TouchableOpacity
+                            onPress={() => router.push('/(tabs)/control')}
+                            style={[S.quickBtn, { backgroundColor: DARK }]}
+                        >
+                            <Shield color={LIME} size={18} />
+                            <Text style={S.quickBtnText}>Control</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => router.push('/(tabs)/packet')}
+                            style={[S.quickBtn, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd' }]}
+                        >
+                            <FileSearch color={DARK} size={18} />
+                            <Text style={[S.quickBtnText, { color: DARK }]}>Packet</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={{ height: 40 }} />
+                </Animated.ScrollView>
+            </Animated.View>
+
+            {/* Diagnostics Overlay */}
+            <Animated.View style={[S.diagOverlay, { transform: [{ translateY: diagTranslateY }] }]}>
+                <View style={S.diagHeader}>
+                    <TouchableOpacity onPress={() => setShowDiag(false)} style={S.closeBtn}>
+                        <ChevronDown color={DARK} size={28} />
+                    </TouchableOpacity>
+                    <Text style={S.diagTitle}>Vehicle Details</Text>
+                    <Activity color={LIME} size={20} />
+                </View>
+
+                <View style={S.diagContent}>
+                    <View style={S.diagTopRow}>
+                        <View style={S.diagGridLeft}>
+                            <View style={S.diagCard}>
+                                <Text style={S.diagLabel}>total km</Text>
+                                <Text style={S.diagValue}>{odemeter.toFixed(1)}</Text>
+                                <Compass size={16} color="#999" />
+                            </View>
+                            <View style={S.diagCard}>
+                                <Text style={S.diagLabel}>service date</Text>
+                                <Text style={S.diagValue}>24-11</Text>
+                                <Calendar size={16} color="#999" />
+                            </View>
+                        </View>
+
+                        {/* Charge Vertical Bar */}
+                        <View style={S.diagChargePanel}>
+                            <Text style={S.diagLabel}>charge</Text>
+                            <View style={S.diagChargeOuter}>
+                                <View style={[S.diagChargeFill, { height: `${voltPct}%`, backgroundColor: voltColor }]} />
+                            </View>
+                            <Text style={S.diagChargeText}>{voltPct.toFixed(0)}%</Text>
+                        </View>
+                    </View>
+
+                    <View style={S.diagMidRow}>
+                        <View style={S.diagCardWide}>
+                            <Text style={S.diagLabel}>Diago area</Text>
+                            <View style={S.diagoStats}>
+                                <View style={S.diagoItem}>
+                                    <View style={[S.statusDot, { backgroundColor: LIME }]} />
+                                    <Text style={S.diagoText}>Engine OK</Text>
+                                </View>
+                                <View style={S.diagoItem}>
+                                    <View style={[S.statusDot, { backgroundColor: LIME }]} />
+                                    <Text style={S.diagoText}>Brakes OK</Text>
                                 </View>
                             </View>
                         </View>
-
-                        <Text style={S.cardHint}>Open full map →</Text>
-                    </TouchableOpacity>
-
-                    {/* Battery Energy Card - Wavy Flow Effect */}
-                    <View style={S.batteryCard}>
-                        {/* The Wave Fill Background */}
-                        <View style={S.waveBackground}>
-                            <View style={[S.waveFill, { height: `${voltPct}%`, backgroundColor: 'rgba(184,232,64,0.15)' }]}>
-                                <Svg height="24" width="150%" viewBox="0 0 100 20" style={S.waveSvg}>
-                                    <Path
-                                        d="M0 10 Q 25 20 50 10 T 100 10"
-                                        fill="none"
-                                        stroke="rgba(184,232,64,0.3)"
-                                        strokeWidth="2"
-                                    />
-                                </Svg>
-                            </View>
-                        </View>
-
-                        <Text style={S.battEnergyLabel}>Battery energy</Text>
-
-                        <View style={S.battContent}>
-                            <Image
-                                source={require('../../assets/scooter_front.jpeg')}
-                                style={S.battScooterImage}
-                            />
-                            <Text style={S.battPctHuge}>{voltPct.toFixed(0)}%</Text>
-                        </View>
-
-                        <Text style={S.powerSaveLabel}>{voltPct > 20 ? 'Standard mode' : 'Power saving mode'}</Text>
-                    </View>
-                </View>
-
-                {/* Status Toggles Section */}
-                <View style={S.statusSection}>
-                    <View style={S.statusRow}>
-                        <View>
-                            <Text style={S.statusLabel}>Ignition Signal</Text>
-                            <Text style={S.statusSub}>Digital Input (DI1)</Text>
-                        </View>
-                        <View style={S.toggleWrap}>
-                            <Text style={[S.toggleLabel, ign && S.toggleActive]}>ON</Text>
-                            <View style={S.toggleDivider} />
-                            <Text style={[S.toggleLabel, !ign && S.toggleActiveRed]}>OFF</Text>
+                        <View style={S.diagCard}>
+                            <Text style={S.diagLabel}>speed</Text>
+                            <Text style={S.diagValue}>{speed}</Text>
+                            <Gauge size={16} color="#999" />
                         </View>
                     </View>
 
-                    <View style={S.statusRow}>
-                        <View>
-                            <Text style={S.statusLabel}>Immobilizer</Text>
-                            <Text style={S.statusSub}>Digital Output (DO1)</Text>
-                        </View>
-                        <View style={S.toggleWrap}>
-                            <Text style={[S.toggleLabel, immob && S.toggleActiveRed]}>ON</Text>
-                            <View style={S.toggleDivider} />
-                            <Text style={[S.toggleLabel, !immob && S.toggleActive]}>OFF</Text>
-                        </View>
+                    <View style={S.diagScooterContainer}>
+                        <Image
+                            source={require('../../assets/scooter_side.jpeg')}
+                            style={S.diagScooterImage}
+                        />
                     </View>
                 </View>
-
-                {/* Quick Action Buttons */}
-                <View style={S.actionRow}>
-                    <TouchableOpacity
-                        onPress={() => router.push('/(tabs)/control')}
-                        style={[S.quickBtn, { backgroundColor: DARK }]}
-                    >
-                        <Shield color={LIME} size={18} />
-                        <Text style={S.quickBtnText}>Control</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        onPress={() => router.push('/(tabs)/packet')}
-                        style={[S.quickBtn, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd' }]}
-                    >
-                        <FileSearch color={DARK} size={18} />
-                        <Text style={[S.quickBtnText, { color: DARK }]}>Packet</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={{ height: 40 }} />
-            </Animated.ScrollView>
+            </Animated.View>
         </View>
     );
 }
 
 const S = StyleSheet.create({
     root: { flex: 1, backgroundColor: CREAM },
+    mainWrap: { flex: 1 },
     header: {
         paddingHorizontal: 24, paddingTop: 60, paddingBottom: 20,
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -273,4 +362,35 @@ const S = StyleSheet.create({
     actionRow: { flexDirection: 'row', gap: 12 },
     quickBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 60, borderRadius: 100, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 4 },
     quickBtnText: { color: LIME, fontSize: 16, fontWeight: '900', letterSpacing: 0.5 },
+
+    // Diagnostics Styles
+    diagOverlay: {
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: CREAM, borderTopLeftRadius: 40, borderTopRightRadius: 40,
+        paddingTop: 50, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 30, elevation: 20
+    },
+    diagHeader: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 24, marginBottom: 30
+    },
+    closeBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+    diagTitle: { fontSize: 18, fontWeight: '900', color: DARK },
+    diagContent: { flex: 1, paddingHorizontal: 24 },
+    diagTopRow: { flexDirection: 'row', gap: 16, height: 220, marginBottom: 16 },
+    diagGridLeft: { flex: 1.2, gap: 16 },
+    diagCard: { flex: 1, backgroundColor: '#fff', borderRadius: 28, padding: 16, justifyContent: 'space-between' },
+    diagLabel: { fontSize: 11, fontWeight: '800', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5 },
+    diagValue: { fontSize: 28, fontWeight: '900', color: DARK },
+    diagChargePanel: { flex: 0.8, backgroundColor: DARK, borderRadius: 28, padding: 16, alignItems: 'center', justifyContent: 'space-between' },
+    diagChargeOuter: { width: 14, height: 120, backgroundColor: '#333', borderRadius: 10, overflow: 'hidden', justifyContent: 'flex-end' },
+    diagChargeFill: { width: '100%', borderRadius: 8 },
+    diagChargeText: { fontSize: 16, fontWeight: '900', color: LIME },
+    diagMidRow: { flexDirection: 'row', gap: 16, height: 120, marginBottom: 20 },
+    diagCardWide: { flex: 1.5, backgroundColor: '#fff', borderRadius: 28, padding: 16 },
+    diagoStats: { marginTop: 10, gap: 8 },
+    diagoItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    statusDot: { width: 6, height: 6, borderRadius: 3 },
+    diagoText: { fontSize: 13, fontWeight: '700', color: DARK },
+    diagScooterContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -20 },
+    diagScooterImage: { width: width * 1.2, height: 260, resizeMode: 'contain' },
 });
