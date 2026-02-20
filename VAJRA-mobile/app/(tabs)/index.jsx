@@ -8,8 +8,8 @@ import Svg, { Path } from 'react-native-svg';
 import { useTelematicsContext } from '../_layout';
 import { useRouter } from 'expo-router';
 import {
-    Shield, FileSearch, Map,
-    ChevronDown, Activity, Compass, Calendar, Gauge,
+    Shield, FileSearch, Map, Settings,
+    ChevronDown, Activity, Compass, Calendar, Gauge, User, Bell, LogOut
 } from 'lucide-react-native';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -23,7 +23,9 @@ export default function Dashboard() {
     const scrollY = useRef(new Animated.Value(0)).current;
 
     const [showDiag, setShowDiag] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
     const diagAnim = useRef(new Animated.Value(0)).current;
+    const settingsAnim = useRef(new Animated.Value(0)).current;
     const imgScale = useRef(new Animated.Value(1)).current;
 
     const p = ctx?.latestPacket;
@@ -45,6 +47,14 @@ export default function Dashboard() {
         }).start();
     }, [showDiag]);
 
+    useEffect(() => {
+        Animated.timing(settingsAnim, {
+            toValue: showSettings ? 1 : 0,
+            duration: 400,
+            useNativeDriver: true,
+        }).start();
+    }, [showSettings]);
+
     const onPressHero = () => {
         Animated.sequence([
             Animated.timing(imgScale, { toValue: 1.08, duration: 180, useNativeDriver: true }),
@@ -57,69 +67,80 @@ export default function Dashboard() {
         outputRange: [SCREEN_HEIGHT, 0],
     });
 
+    const settingsTranslateY = settingsAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [SCREEN_HEIGHT, 0],
+    });
+
+    const mainScale = Animated.add(diagAnim, settingsAnim).interpolate({
+        inputRange: [0, 1, 2],
+        outputRange: [1, 0.95, 0.92],
+    });
+
     return (
         <View style={S.root}>
+            <Animated.View style={[S.mainWrap, { transform: [{ scale: mainScale }] }]}>
 
-            {/* ── Header ── */}
-            <View style={S.header}>
-                <View>
-                    <Text style={S.headerSub}>Hello,</Text>
-                    <Text style={S.headerTitle}>Vajra Driver</Text>
+                {/* ── Header ── */}
+                <View style={S.header}>
+                    <View>
+                        <Text style={S.headerSub}>Hello,</Text>
+                        <Text style={S.headerTitle}>VK</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => setShowSettings(true)} style={S.profileCircle}>
+                        <Settings color={DARK} size={22} strokeWidth={2} style={{ alignSelf: 'center', marginTop: 11 }} />
+                    </TouchableOpacity>
                 </View>
-                <View style={S.profileCircle}>
-                    <View style={S.profilePlaceholder} />
-                </View>
-            </View>
 
-            {/* ── Scrollable content ── */}
-            <Animated.ScrollView
-                onScroll={Animated.event(
-                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                    { useNativeDriver: false }
-                )}
-                scrollEventThrottle={16}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={S.scrollContent}
-            >
-                {/* Hero Card */}
-                <TouchableOpacity activeOpacity={1} onPress={onPressHero} style={S.heroCard}>
-                    <View style={S.chongHeader}>
-                        <Text style={S.chongText}>Chong</Text>
-                        <View style={S.premiumBadge}>
-                            <Text style={S.premiumText}>PREMIUM</Text>
+                {/* ── Scrollable content ── */}
+                <Animated.ScrollView
+                    onScroll={Animated.event(
+                        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                        { useNativeDriver: false }
+                    )}
+                    scrollEventThrottle={16}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={S.scrollContent}
+                >
+                    {/* Hero Card */}
+                    <TouchableOpacity activeOpacity={1} onPress={onPressHero} style={S.heroCard}>
+                        <View style={S.chongHeader}>
+                            <Text style={S.chongText}>Chong</Text>
+                            <View style={S.premiumBadge}>
+                                <Text style={S.premiumText}>PREMIUM</Text>
+                            </View>
                         </View>
-                    </View>
-                    <View style={S.imageContainer}>
-                        <Animated.Image
-                            source={require('../../assets/scooter_side.jpeg')}
-                            style={[S.scooterImage, { transform: [{ scale: imgScale }] }]}
-                        />
-                    </View>
-                    <View style={S.chongFooter}>
-                        <Text style={S.scooterModel}>GTS Super 300</Text>
-                        <Text style={S.tapHint}>Tap for details</Text>
-                    </View>
-                </TouchableOpacity>
-
-                {/* Grid Row: Map + Battery */}
-                <View style={S.gridRow}>
-                    {/* Mini Map card */}
-                    <TouchableOpacity
-                        activeOpacity={0.9}
-                        onPress={() => router.push('/(tabs)/map')}
-                        style={S.chargingCard}
-                    >
-                        <View style={S.cardHeader}>
-                            <Text style={S.cardTitle}>Live{"\n"}Map</Text>
-                            <Map color={DARK} size={22} strokeWidth={2.5} />
+                        <View style={S.imageContainer}>
+                            <Animated.Image
+                                source={require('../../assets/scooter_side.jpeg')}
+                                style={[S.scooterImage, { transform: [{ scale: imgScale }] }]}
+                            />
                         </View>
+                        <View style={S.chongFooter}>
+                            <Text style={S.scooterModel}>GTS Super 300</Text>
+                            <Text style={S.tapHint}>Tap for details</Text>
+                        </View>
+                    </TouchableOpacity>
 
-                        <View style={S.miniMapWrapper}>
-                            <WebView
-                                pointerEvents="none"
-                                scrollEnabled={false}
-                                source={{
-                                    html: `<!DOCTYPE html><html><head>
+                    {/* Grid Row: Map + Battery */}
+                    <View style={S.gridRow}>
+                        {/* Mini Map card */}
+                        <TouchableOpacity
+                            activeOpacity={0.9}
+                            onPress={() => router.push('/(tabs)/map')}
+                            style={S.chargingCard}
+                        >
+                            <View style={S.cardHeader}>
+                                <Text style={S.cardTitle}>Live{"\n"}Map</Text>
+                                <Map color={DARK} size={22} strokeWidth={2.5} />
+                            </View>
+
+                            <View style={S.miniMapWrapper}>
+                                <WebView
+                                    pointerEvents="none"
+                                    scrollEnabled={false}
+                                    source={{
+                                        html: `<!DOCTYPE html><html><head>
                                     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
                                     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
                                     <style>*{margin:0;padding:0;}#map{width:100%;height:100%;}.leaflet-control-attribution{display:none!important;}</style>
@@ -128,89 +149,90 @@ export default function Dashboard() {
                                     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(m);
                                     L.circle([${p?.latitude || 12.9716},${p?.longitude || 77.5946}],{color:'#B8E840',fillColor:'#B8E840',fillOpacity:0.5,radius:80}).addTo(m);
                                     </script></body></html>` }}
-                                style={S.miniMap}
-                                javaScriptEnabled
-                                originWhitelist={['*']}
-                                mixedContentMode="always"
-                            />
-                            <View style={S.mapOverlay}>
-                                <View style={S.innerBox}>
-                                    <Text style={S.distLabel}>NEARBY</Text>
+                                    style={S.miniMap}
+                                    javaScriptEnabled
+                                    originWhitelist={['*']}
+                                    mixedContentMode="always"
+                                />
+                                <View style={S.mapOverlay}>
+                                    <View style={S.innerBox}>
+                                        <Text style={S.distLabel}>NEARBY</Text>
+                                    </View>
                                 </View>
                             </View>
+
+                            <Text style={S.cardHint}>Open full map →</Text>
+                        </TouchableOpacity>
+
+                        {/* Battery card */}
+                        <View style={S.batteryCard}>
+                            {/* Wave fill background */}
+                            <View style={S.waveBackground}>
+                                <View style={[S.waveFill, { height: `${voltPct}%`, backgroundColor: 'rgba(184,232,64,0.14)' }]}>
+                                    <Svg height={24} width="150%" viewBox="0 0 100 20" style={S.waveSvg}>
+                                        <Path d="M0 10 Q 25 20 50 10 T 100 10" fill="none" stroke="rgba(184,232,64,0.28)" strokeWidth="2" />
+                                    </Svg>
+                                </View>
+                            </View>
+
+                            <Text style={S.battEnergyLabel}>Battery</Text>
+                            <View style={S.battContent}>
+                                <Image source={require('../../assets/scooter_front.jpeg')} style={S.battScooterImage} />
+                                <Text style={[S.battPctHuge, { color: voltColor }]}>{voltPct.toFixed(0)}%</Text>
+                            </View>
+                            <Text style={S.powerSaveLabel}>{voltPct > 20 ? 'Standard mode' : '⚠️ Low battery'}</Text>
                         </View>
+                    </View>
 
-                        <Text style={S.cardHint}>Open full map →</Text>
-                    </TouchableOpacity>
-
-                    {/* Battery card */}
-                    <View style={S.batteryCard}>
-                        {/* Wave fill background */}
-                        <View style={S.waveBackground}>
-                            <View style={[S.waveFill, { height: `${voltPct}%`, backgroundColor: 'rgba(184,232,64,0.14)' }]}>
-                                <Svg height={24} width="150%" viewBox="0 0 100 20" style={S.waveSvg}>
-                                    <Path d="M0 10 Q 25 20 50 10 T 100 10" fill="none" stroke="rgba(184,232,64,0.28)" strokeWidth="2" />
-                                </Svg>
+                    {/* Status Section */}
+                    <View style={S.statusSection}>
+                        <View style={S.statusRow}>
+                            <View>
+                                <Text style={S.statusLabel}>Ignition Signal</Text>
+                                <Text style={S.statusSub}>Digital Input (DI1)</Text>
+                            </View>
+                            <View style={S.toggleWrap}>
+                                <Text style={[S.toggleLabel, ign && S.toggleActive]}>ON</Text>
+                                <View style={S.toggleDivider} />
+                                <Text style={[S.toggleLabel, !ign && S.toggleActiveRed]}>OFF</Text>
                             </View>
                         </View>
 
-                        <Text style={S.battEnergyLabel}>Battery</Text>
-                        <View style={S.battContent}>
-                            <Image source={require('../../assets/scooter_front.jpeg')} style={S.battScooterImage} />
-                            <Text style={[S.battPctHuge, { color: voltColor }]}>{voltPct.toFixed(0)}%</Text>
-                        </View>
-                        <Text style={S.powerSaveLabel}>{voltPct > 20 ? 'Standard mode' : '⚠️ Low battery'}</Text>
-                    </View>
-                </View>
-
-                {/* Status Section */}
-                <View style={S.statusSection}>
-                    <View style={S.statusRow}>
-                        <View>
-                            <Text style={S.statusLabel}>Ignition Signal</Text>
-                            <Text style={S.statusSub}>Digital Input (DI1)</Text>
-                        </View>
-                        <View style={S.toggleWrap}>
-                            <Text style={[S.toggleLabel, ign && S.toggleActive]}>ON</Text>
-                            <View style={S.toggleDivider} />
-                            <Text style={[S.toggleLabel, !ign && S.toggleActiveRed]}>OFF</Text>
+                        <View style={[S.statusRow, { borderBottomWidth: 0 }]}>
+                            <View>
+                                <Text style={S.statusLabel}>Immobilizer</Text>
+                                <Text style={S.statusSub}>Digital Output (DO1)</Text>
+                            </View>
+                            <View style={S.toggleWrap}>
+                                <Text style={[S.toggleLabel, immob && S.toggleActiveRed]}>ON</Text>
+                                <View style={S.toggleDivider} />
+                                <Text style={[S.toggleLabel, !immob && S.toggleActive]}>OFF</Text>
+                            </View>
                         </View>
                     </View>
 
-                    <View style={[S.statusRow, { borderBottomWidth: 0 }]}>
-                        <View>
-                            <Text style={S.statusLabel}>Immobilizer</Text>
-                            <Text style={S.statusSub}>Digital Output (DO1)</Text>
-                        </View>
-                        <View style={S.toggleWrap}>
-                            <Text style={[S.toggleLabel, immob && S.toggleActiveRed]}>ON</Text>
-                            <View style={S.toggleDivider} />
-                            <Text style={[S.toggleLabel, !immob && S.toggleActive]}>OFF</Text>
-                        </View>
+                    {/* Quick Action Buttons */}
+                    <View style={S.actionRow}>
+                        <TouchableOpacity
+                            onPress={() => router.push('/(tabs)/control')}
+                            style={[S.quickBtn, { backgroundColor: DARK }]}
+                        >
+                            <Shield color={LIME} size={18} />
+                            <Text style={S.quickBtnText}>Control</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => router.push('/(tabs)/packet')}
+                            style={[S.quickBtn, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd' }]}
+                        >
+                            <FileSearch color={DARK} size={18} />
+                            <Text style={[S.quickBtnText, { color: DARK }]}>Packet</Text>
+                        </TouchableOpacity>
                     </View>
-                </View>
 
-                {/* Quick Action Buttons */}
-                <View style={S.actionRow}>
-                    <TouchableOpacity
-                        onPress={() => router.push('/(tabs)/control')}
-                        style={[S.quickBtn, { backgroundColor: DARK }]}
-                    >
-                        <Shield color={LIME} size={18} />
-                        <Text style={S.quickBtnText}>Control</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        onPress={() => router.push('/(tabs)/packet')}
-                        style={[S.quickBtn, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd' }]}
-                    >
-                        <FileSearch color={DARK} size={18} />
-                        <Text style={[S.quickBtnText, { color: DARK }]}>Packet</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={{ height: 40 }} />
-            </Animated.ScrollView>
+                    <View style={{ height: 40 }} />
+                </Animated.ScrollView>
+            </Animated.View>
 
             {/* ── Diagnostics Overlay ── */}
             <Animated.View
@@ -275,7 +297,66 @@ export default function Dashboard() {
                         <Image
                             source={require('../../assets/scooter_side.jpeg')}
                             style={S.diagScooterImage}
+                            width={300}
+                            height={300}
                         />
+                    </View>
+                </View>
+            </Animated.View>
+
+            {/* ── Settings Overlay ── */}
+            <Animated.View
+                style={[S.diagOverlay, { transform: [{ translateY: settingsTranslateY }] }]}
+                pointerEvents={showSettings ? 'auto' : 'none'}
+            >
+                <View style={S.diagHeader}>
+                    <TouchableOpacity onPress={() => setShowSettings(false)} style={S.closeBtn}>
+                        <ChevronDown color={DARK} size={26} />
+                    </TouchableOpacity>
+                    <Text style={S.diagTitle}>Settings</Text>
+                    <View style={{ width: 44 }} />
+                </View>
+
+                <View style={S.diagContent}>
+                    <View style={S.settingsSection}>
+                        <TouchableOpacity style={S.settingsItem}>
+                            <View style={S.settingsIconWrap}>
+                                <User color={DARK} size={20} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={S.settingsItemLabel}>Account Details</Text>
+                                <Text style={S.settingsItemSub}>Profile, Personal Info</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={S.settingsItem}>
+                            <View style={S.settingsIconWrap}>
+                                <Bell color={DARK} size={20} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={S.settingsItemLabel}>Notifications</Text>
+                                <Text style={S.settingsItemSub}>Alerts, Sound, Vibrate</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[S.settingsItem, { borderBottomWidth: 0 }]}>
+                            <View style={S.settingsIconWrap}>
+                                <Shield color={DARK} size={20} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={S.settingsItemLabel}>Security</Text>
+                                <Text style={S.settingsItemSub}>Password, Geofence</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity style={S.logOutBtn}>
+                        <LogOut color="#ef4444" size={20} />
+                        <Text style={S.logOutText}>Log Out</Text>
+                    </TouchableOpacity>
+
+                    <View style={S.appVersionBox}>
+                        <Text style={S.appVersionText}>Vajra App v2.4.1</Text>
                     </View>
                 </View>
             </Animated.View>
@@ -407,4 +488,16 @@ const S = StyleSheet.create({
 
     diagScooterContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -10 },
     diagScooterImage: { width: width * 1.1, height: 220, resizeMode: 'contain' },
+
+    mainWrap: { flex: 1 },
+    /* settings unique */
+    settingsSection: { backgroundColor: '#fff', borderRadius: 28, paddingHorizontal: 16, marginBottom: 24, shadowColor: '#000', shadowOpacity: 0.02, shadowRadius: 10, elevation: 1 },
+    settingsItem: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#f1f1f1' },
+    settingsIconWrap: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#f8f8f8', alignItems: 'center', justifyContent: 'center' },
+    settingsItemLabel: { fontSize: 15, fontWeight: '800', color: DARK },
+    settingsItemSub: { fontSize: 11, color: '#aaa', fontWeight: '600', marginTop: 2 },
+    logOutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 58, backgroundColor: 'rgba(239, 68, 68, 0.08)', borderRadius: 20 },
+    logOutText: { fontSize: 15, fontWeight: '900', color: '#ef4444' },
+    appVersionBox: { marginTop: 'auto', marginBottom: 40, alignItems: 'center' },
+    appVersionText: { fontSize: 12, color: '#ccc', fontWeight: '700' },
 });
