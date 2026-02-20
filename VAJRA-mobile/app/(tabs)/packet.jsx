@@ -4,6 +4,7 @@ import { useTelematicsContext } from '../_layout';
 
 const LIME = '#B8E840';
 const DARK = '#1C1C1E';
+const CREAM = '#F2EDE8';
 
 const FIELD_DEFS = [
     { key: 'dataLen', label: 'Data Length', section: 'header', color: '#f59e0b' },
