@@ -318,6 +318,8 @@ export default function Dashboard() {
                         <Image
                             source={require('../../assets/scooter_side.jpeg')}
                             style={S.diagScooterImage}
+                            width={300}
+                            height={300}
                         />
                     </View>
                 </View>
