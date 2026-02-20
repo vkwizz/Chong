@@ -32,6 +32,8 @@ export default function Dashboard() {
     const voltPct = Math.min(100, (volt / 5) * 100);
     const voltColor = volt < 2 ? '#ef4444' : volt < 3.5 ? '#f59e0b' : LIME;
 
+    const imgScale = useRef(new Animated.Value(1)).current;
+
     useEffect(() => {
         Animated.timing(diagAnim, {
             toValue: showDiag ? 1 : 0,
@@ -39,6 +41,13 @@ export default function Dashboard() {
             useNativeDriver: true,
         }).start();
     }, [showDiag]);
+
+    const onPressHero = () => {
+        Animated.sequence([
+            Animated.timing(imgScale, { toValue: 1.15, duration: 200, useNativeDriver: true }),
+            Animated.timing(imgScale, { toValue: 1, duration: 200, useNativeDriver: true }),
+        ]).start(() => setShowDiag(true));
+    };
 
     const diagTranslateY = diagAnim.interpolate({
         inputRange: [0, 1],
@@ -72,7 +81,7 @@ export default function Dashboard() {
                     contentContainerStyle={S.scrollContent}
                 >
                     {/* Hero Card: "Chong" Luxury Section */}
-                    <TouchableOpacity activeOpacity={0.9} onPress={() => setShowDiag(true)} style={S.heroCard}>
+                    <TouchableOpacity activeOpacity={1} onPress={onPressHero} style={S.heroCard}>
                         <View style={S.chongHeader}>
                             <Text style={S.chongText}>Chong</Text>
                             <View style={S.premiumBadge}>
@@ -81,9 +90,9 @@ export default function Dashboard() {
                         </View>
                         <View style={S.imageContainer}>
                             <View style={S.scooterGlow} />
-                            <Image
+                            <Animated.Image
                                 source={require('../../assets/scooter_side.jpeg')}
-                                style={S.scooterImage}
+                                style={[S.scooterImage, { transform: [{ scale: imgScale }] }]}
                             />
                         </View>
                         <View style={S.chongFooter}>
@@ -314,8 +323,8 @@ const S = StyleSheet.create({
     premiumBadge: { backgroundColor: DARK, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
     premiumText: { color: LIME, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
     imageContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', position: 'relative' },
-    scooterGlow: { position: 'absolute', width: 220, height: 140, backgroundColor: LIME, borderRadius: 100, opacity: 0.15, transform: [{ scale: 1.2 }], filter: 'blur(40px)' },
-    scooterImage: { width: '110%', height: '90%', resizeMode: 'contain', zIndex: 2 },
+    scooterGlow: { position: 'absolute', width: 220, height: 140, backgroundColor: LIME, borderRadius: 100, opacity: 0.12, transform: [{ scale: 1.4 }], filter: 'blur(50px)' },
+    scooterImage: { width: '130%', height: '100%', resizeMode: 'contain', zIndex: 2, backgroundColor: 'transparent' },
     chongFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
     scooterModel: { fontSize: 14, fontWeight: '800', color: '#333' },
     scooterStatus: { fontSize: 11, fontWeight: '600', color: LIME, backgroundColor: DARK, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
