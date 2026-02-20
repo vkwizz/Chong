@@ -9,7 +9,7 @@ global.process = process;
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { generateSimulatedPacket, setImmobilizer } from '../src/utils/dataSimulator';
+import { generateSimulatedPacket, setImmobilizer, setIgnition } from '../src/utils/dataSimulator';
 import { emitPacket, connectMQTT, onControlReceived } from '../src/utils/mqttClient';
 
 export const TelematicsContext = createContext(null);
@@ -20,6 +20,7 @@ export default function RootLayout() {
     const [packetHistory, setPacketHistory] = useState([]);
     const [voltageHistory, setVoltageHistory] = useState([]);
     const [immobActive, setImmobActive] = useState(false);
+    const [ignitionActive, setIgnitionActive] = useState(true);
     const [mqttStatus, setMqttStatus] = useState('simulated');
 
     useEffect(() => {
@@ -30,6 +31,9 @@ export default function RootLayout() {
         const unsubControl = onControlReceived(({ state }) => {
             setImmobilizer(state);
             setImmobActive(state);
+            // Sync ignition with immobilizer state
+            setIgnition(!state);
+            setIgnitionActive(!state);
         });
 
         // Simulation loop — every 2s
@@ -50,10 +54,13 @@ export default function RootLayout() {
     const handleImmobToggle = (val) => {
         setImmobilizer(val);
         setImmobActive(val);
+        // Sync ignition with immobilizer state
+        setIgnition(!val);
+        setIgnitionActive(!val);
     };
 
     return (
-        <TelematicsContext.Provider value={{ latestPacket, packetHistory, voltageHistory, immobActive, handleImmobToggle, mqttStatus }}>
+        <TelematicsContext.Provider value={{ latestPacket, packetHistory, voltageHistory, immobActive, handleImmobToggle, mqttStatus, ignitionActive }}>
             <StatusBar style="light" />
             <Stack screenOptions={{ headerShown: false }} />
         </TelematicsContext.Provider>
