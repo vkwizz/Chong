@@ -81,11 +81,15 @@ var icon = L.divIcon({
 var marker = L.marker([${lat}, ${lon}], { icon }).addTo(map);
 
 // Update vehicle position from React Native
-window.updateVehicle = function(lat, lon, spd) {
+window.updateVehicle = function(lat, lon, spd, immob) {
   marker.setLatLng([lat, lon]);
   document.querySelector('.speed-badge .val').textContent = spd;
   document.querySelector('.coords-strip span:first-child').textContent = lat.toFixed(5) + '° N';
   document.querySelector('.coords-strip span:last-child').textContent = lon.toFixed(5) + '° E';
+  var sb = document.querySelector('.status-badge');
+  sb.style.background = immob ? 'rgba(239,68,68,0.9)' : 'rgba(28,28,30,0.92)';
+  sb.style.color = immob ? 'white' : '${LIME}';
+  sb.textContent = immob ? '🔴 IMMOB' : '🟢 MOBILE';
   map.setView([lat, lon], map.getZoom());
 };
 </script>
@@ -101,14 +105,17 @@ export default function MapScreen() {
   const speed = Math.round(p?.speed ?? 0);
   const currentPos = { lat: p?.latitude ?? 12.9716, lon: p?.longitude ?? 77.5946 };
 
-  // When packet updates, push new position to WebView via JS injection
+  // Freeze initial HTML — never change source after first render
+  const initialHTML = useRef(buildMapHTML(currentPos, speed, immob));
+
+  // Push position + speed updates via JS injection only (no WebView reload)
   React.useEffect(() => {
     if (webRef.current && p) {
       webRef.current.injectJavaScript(
-        `window.updateVehicle && window.updateVehicle(${p.latitude}, ${p.longitude}, ${speed}); true;`
+        `window.updateVehicle && window.updateVehicle(${p.latitude}, ${p.longitude}, ${Math.round(p.speed ?? 0)}, ${immob}); true;`
       );
     }
-  }, [p]);
+  }, [p, immob]);
 
   return (
     <View style={S.root}>
@@ -123,7 +130,7 @@ export default function MapScreen() {
       </View>
       <WebView
         ref={webRef}
-        source={{ html: buildMapHTML(currentPos, speed, immob) }}
+        source={{ html: initialHTML.current }}
         style={S.map}
         javaScriptEnabled
         domStorageEnabled
