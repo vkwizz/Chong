@@ -1,36 +1,38 @@
 {
-    "expo": {
-        "name": "VAJRA Telematics",
-        "slug": "vajra-mobile",
-        "version": "1.0.0",
-        "orientation": "portrait",
-        "icon": "./assets/icon.png",
-        "userInterfaceStyle": "light",
-        "scheme": "vajra",
-        "newArchEnabled": true,
-        "splash": {
-            "resizeMode": "contain",
-            "backgroundColor": "#F2EDE8"
-        },
-        "ios": {
-            "supportsTablet": true,
-            "bundleIdentifier": "com.vajra.telematics"
-        },
-        "android": {
-            "adaptiveIcon": {
-                "backgroundColor": "#F2EDE8"
-            },
-            "package": "com.vajra.telematics",
-            "permissions": [
-                "ACCESS_NETWORK_STATE",
-                "INTERNET"
-            ]
-        },
-        "plugins": [
-            "expo-router"
-        ],
-        "experiments": {
-            "typedRoutes": false
-        }
+  "expo": {
+    "name": "VAJRA Telematics",
+    "slug": "vajra-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "vajra",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#F2EDE8"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vajra.telematics"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F2EDE8"
+      },
+      "package": "com.vajra.telematics",
+      "permissions": [
+        "ACCESS_NETWORK_STATE",
+        "INTERNET"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": false
     }
+  }
 }
