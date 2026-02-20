@@ -34,7 +34,7 @@ export default function Dashboard() {
             <View style={S.header}>
                 <View>
                     <Text style={S.headerSub}>Hello,</Text>
-                    <Text style={S.headerTitle}>Vajra Driver</Text>
+                    <Text style={S.headerTitle}>VK</Text>
                 </View>
                 <View style={S.profileCircle}>
                     <User size={32} color={DARK} style={{ alignSelf: 'center', marginTop: 10 }} />
@@ -59,13 +59,12 @@ export default function Dashboard() {
                     <View style={S.imageContainer}>
                         <View style={S.scooterGlow} />
                         <Image
-                            source={require('../../assets/scooter_side.png')}
+                            source={require('../../assets/scooter_side.jpeg')}
                             style={S.scooterImage}
                         />
                     </View>
                     <View style={S.chongFooter}>
                         <Text style={S.scooterModel}>GTS Super 300</Text>
-                        <Text style={S.scooterStatus}>System v2.4 Active</Text>
                     </View>
                 </View>
 
@@ -89,21 +88,33 @@ export default function Dashboard() {
                         <Text style={S.cardHint}>Navigate Now →</Text>
                     </TouchableOpacity>
 
-                    {/* Battery Vertical Indicator - Sleek Design */}
+                    {/* Battery Energy Card - Wavy Flow Effect */}
                     <View style={S.batteryCard}>
-                        <View style={S.cardHeader}>
-                            <Text style={S.cardTitle}>Battery{"\n"}Status</Text>
-                            <User size={20} color="#999" />
-                        </View>
-                        <View style={S.battContainer}>
-                            <View style={S.battOuter}>
-                                <Animated.View style={[S.battFill, { height: `${voltPct}%`, backgroundColor: voltColor }]} />
+                        {/* The Wave Fill Background */}
+                        <View style={S.waveBackground}>
+                            <View style={[S.waveFill, { height: `${voltPct}%`, backgroundColor: 'rgba(184,232,64,0.15)' }]}>
+                                <Svg height="24" width="150%" viewBox="0 0 100 20" style={S.waveSvg}>
+                                    <Path
+                                        d="M0 10 Q 25 20 50 10 T 100 10"
+                                        fill="none"
+                                        stroke="rgba(184,232,64,0.3)"
+                                        strokeWidth="2"
+                                    />
+                                </Svg>
                             </View>
-                            <View style={S.battLabelSide}>
-                                <Text style={[S.battPctText, { color: DARK }]}>{voltPct.toFixed(0)}%</Text>
-                                <Text style={[S.battStatus, { color: voltColor }]}>{ign ? 'DRIVING' : 'STATIONARY'}</Text>
-                            </View>
                         </View>
+
+                        <Text style={S.battEnergyLabel}>Battery energy</Text>
+
+                        <View style={S.battContent}>
+                            <Image
+                                source={require('../../assets/scooter_top.png')}
+                                style={S.battScooterImage}
+                            />
+                            <Text style={S.battPctHuge}>{voltPct.toFixed(0)}%</Text>
+                        </View>
+
+                        <Text style={S.powerSaveLabel}>{voltPct > 20 ? 'Standard mode' : 'Power saving mode'}</Text>
                     </View>
                 </View>
 
@@ -204,13 +215,16 @@ const S = StyleSheet.create({
     batteryCard: {
         flex: 1, backgroundColor: '#fff', borderRadius: 32, padding: 20,
         justifyContent: 'space-between', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 15, elevation: 3,
+        position: 'relative', overflow: 'hidden',
     },
-    battContainer: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, flex: 1, marginTop: 10 },
-    battOuter: { width: 24, height: '85%', backgroundColor: '#f5f5f5', borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#eee', justifyContent: 'flex-end' },
-    battFill: { width: '100%', borderRadius: 8 },
-    battLabelSide: { flex: 1, paddingBottom: 5 },
-    battPctText: { fontSize: 26, fontWeight: '900', color: DARK, letterSpacing: -1 },
-    battStatus: { fontSize: 8, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+    waveBackground: { position: 'absolute', bottom: 0, left: 0, right: 0, top: 0, justifyContent: 'flex-end', zIndex: 0 },
+    waveFill: { width: '100%', position: 'relative' },
+    waveSvg: { position: 'absolute', top: -12, left: -20 },
+    battEnergyLabel: { fontSize: 13, color: '#999', fontWeight: '800', textAlign: 'center', zIndex: 1 },
+    battContent: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 1 },
+    battScooterImage: { width: 80, height: 100, resizeMode: 'contain' },
+    battPctHuge: { fontSize: 42, fontWeight: '900', color: DARK, letterSpacing: -2 },
+    powerSaveLabel: { fontSize: 11, color: '#777', fontWeight: '800', textAlign: 'center', zIndex: 1 },
 
     statusSection: { backgroundColor: '#fff', borderRadius: 32, padding: 24, marginBottom: 20, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 20, elevation: 2 },
     statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f8f8f8' },
