@@ -48,40 +48,60 @@ export default function Dashboard() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={S.scrollContent}
             >
-                {/* Hero Card: "Chong" + Side Scooter Image */}
+                {/* Hero Card: "Chong" Luxury Section */}
                 <View style={S.heroCard}>
-                    <Text style={S.chongText}>Chong</Text>
-                    <Image
-                        source={require('../../assets/scooter_side.png')}
-                        style={S.scooterImage}
-                    />
+                    <View style={S.chongHeader}>
+                        <Text style={S.chongText}>Chong</Text>
+                        <View style={S.premiumBadge}>
+                            <Text style={S.premiumText}>PREMIUM</Text>
+                        </View>
+                    </View>
+                    <View style={S.imageContainer}>
+                        <View style={S.scooterGlow} />
+                        <Image
+                            source={require('../../assets/scooter_side.png')}
+                            style={S.scooterImage}
+                        />
+                    </View>
+                    <View style={S.chongFooter}>
+                        <Text style={S.scooterModel}>GTS Super 300</Text>
+                        <Text style={S.scooterStatus}>System v2.4 Active</Text>
+                    </View>
                 </View>
 
                 {/* Grid Row: Charging Station + Battery */}
                 <View style={S.gridRow}>
-                    {/* Charging Station Card */}
+                    {/* Charging Station Card - Interactive Glass Look */}
                     <TouchableOpacity
-                        activeOpacity={0.8}
+                        activeOpacity={0.9}
                         onPress={() => router.push('/(tabs)/map')}
                         style={S.chargingCard}
                     >
-                        <Text style={S.cardTitle}>Charging{"\n"}Station</Text>
-                        <View style={S.stationBox}>
-                            <Map color={DARK} size={30} strokeWidth={1.5} />
+                        <View style={S.cardHeader}>
+                            <Text style={S.cardTitle}>Charging{"\n"}Station</Text>
+                            <Map color={DARK} size={24} strokeWidth={2.5} />
                         </View>
-                        <Text style={S.cardHint}>Find nearest</Text>
+                        <View style={S.stationBox}>
+                            <View style={S.innerBox}>
+                                <Text style={S.distLabel}>2.4 km</Text>
+                            </View>
+                        </View>
+                        <Text style={S.cardHint}>Navigate Now →</Text>
                     </TouchableOpacity>
 
-                    {/* Battery Vertical Indicator */}
+                    {/* Battery Vertical Indicator - Sleek Design */}
                     <View style={S.batteryCard}>
-                        <Text style={S.cardTitle}>Battery</Text>
+                        <View style={S.cardHeader}>
+                            <Text style={S.cardTitle}>Battery{"\n"}Status</Text>
+                            <User size={20} color="#999" />
+                        </View>
                         <View style={S.battContainer}>
                             <View style={S.battOuter}>
-                                <View style={[S.battFill, { height: `${voltPct}%`, backgroundColor: voltColor }]} />
+                                <Animated.View style={[S.battFill, { height: `${voltPct}%`, backgroundColor: voltColor }]} />
                             </View>
                             <View style={S.battLabelSide}>
-                                <Text style={[S.battPctText, { color: voltColor }]}>{voltPct.toFixed(0)}%</Text>
-                                <Text style={S.battStatus}>{ign ? 'Discharging' : 'Standby'}</Text>
+                                <Text style={[S.battPctText, { color: DARK }]}>{voltPct.toFixed(0)}%</Text>
+                                <Text style={[S.battStatus, { color: voltColor }]}>{ign ? 'DRIVING' : 'STATIONARY'}</Text>
                             </View>
                         </View>
                     </View>
@@ -147,45 +167,62 @@ const S = StyleSheet.create({
     },
     headerSub: { fontSize: 13, color: '#999', fontWeight: '600' },
     headerTitle: { fontSize: 22, fontWeight: '900', color: DARK },
-    profileCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ddd', overflow: 'hidden', position: 'relative' },
-    profilePlaceholder: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.05)' },
+    profileCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', overflow: 'hidden', position: 'relative', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 },
+    profilePlaceholder: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.02)' },
     scrollContent: { paddingHorizontal: 24 },
+
+    // Chong Premium Card
     heroCard: {
-        backgroundColor: '#fff', borderRadius: 32, padding: 24, height: SCREEN_HEIGHT * 0.38,
-        shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 20, elevation: 5,
-        marginBottom: 20, overflow: 'hidden', justifyContent: 'space-between',
+        backgroundColor: '#fff', borderRadius: 36, padding: 24, height: SCREEN_HEIGHT * 0.4,
+        shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 30, elevation: 8,
+        marginBottom: 20, overflow: 'hidden',
     },
-    chongText: { fontSize: 36, fontWeight: '800', color: DARK, letterSpacing: -1 },
-    scooterImage: { width: '100%', height: '70%', resizeMode: 'contain', marginTop: 10 },
-    gridRow: { flexDirection: 'row', gap: 16, marginBottom: 20, height: SCREEN_HEIGHT * 0.32 },
+    chongHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    chongText: { fontSize: 38, fontWeight: '900', color: DARK, letterSpacing: -1.5 },
+    premiumBadge: { backgroundColor: DARK, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    premiumText: { color: LIME, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+    imageContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+    scooterGlow: { position: 'absolute', width: 220, height: 140, backgroundColor: LIME, borderRadius: 100, opacity: 0.15, transform: [{ scale: 1.2 }], filter: 'blur(40px)' },
+    scooterImage: { width: '110%', height: '90%', resizeMode: 'contain', zIndex: 2 },
+    chongFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+    scooterModel: { fontSize: 14, fontWeight: '800', color: '#333' },
+    scooterStatus: { fontSize: 11, fontWeight: '600', color: LIME, backgroundColor: DARK, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+
+    gridRow: { flexDirection: 'row', gap: 16, marginBottom: 20, height: SCREEN_HEIGHT * 0.28 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' },
+
     chargingCard: {
-        flex: 1, backgroundColor: LIME, borderRadius: 28, padding: 24,
-        justifyContent: 'space-between',
+        flex: 1, backgroundColor: LIME, borderRadius: 32, padding: 20,
+        justifyContent: 'space-between', shadowColor: LIME, shadowOpacity: 0.3, shadowRadius: 15, elevation: 5,
     },
-    cardTitle: { fontSize: 18, fontWeight: '800', color: DARK, lineHeight: 22 },
-    stationBox: { width: 70, height: 70, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center' },
-    cardHint: { fontSize: 12, color: DARK, opacity: 0.6, fontWeight: '600' },
+    cardTitle: { fontSize: 17, fontWeight: '900', color: DARK, lineHeight: 20, letterSpacing: -0.5 },
+    stationBox: { width: '100%', height: 60, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.05)', alignItems: 'center', justifyContent: 'center' },
+    innerBox: { backgroundColor: DARK, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+    distLabel: { color: LIME, fontSize: 12, fontWeight: '900' },
+    cardHint: { fontSize: 11, color: DARK, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+
     batteryCard: {
-        flex: 1, backgroundColor: '#fff', borderRadius: 28, padding: 24,
-        justifyContent: 'space-between',
-        shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, elevation: 2,
+        flex: 1, backgroundColor: '#fff', borderRadius: 32, padding: 20,
+        justifyContent: 'space-between', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 15, elevation: 3,
     },
     battContainer: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, flex: 1, marginTop: 10 },
-    battOuter: { width: 28, height: '90%', backgroundColor: '#f0f0f0', borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: '#eee', justifyContent: 'flex-end' },
-    battFill: { width: '100%', borderRadius: 6 },
+    battOuter: { width: 24, height: '85%', backgroundColor: '#f5f5f5', borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#eee', justifyContent: 'flex-end' },
+    battFill: { width: '100%', borderRadius: 8 },
     battLabelSide: { flex: 1, paddingBottom: 5 },
-    battPctText: { fontSize: 24, fontWeight: '900' },
-    battStatus: { fontSize: 9, color: '#999', fontWeight: '700', textTransform: 'uppercase' },
-    statusSection: { backgroundColor: '#fff', borderRadius: 28, padding: 20, marginBottom: 20 },
-    statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
-    statusLabel: { fontSize: 14, fontWeight: '800', color: DARK },
-    statusSub: { fontSize: 10, color: '#aaa', fontWeight: '500', marginTop: 2 },
-    toggleWrap: { flexDirection: 'row', backgroundColor: '#f0f0f0', borderRadius: 100, padding: 4, alignItems: 'center' },
-    toggleLabel: { fontSize: 10, fontWeight: '800', color: '#bbb', paddingHorizontal: 12, paddingVertical: 6 },
-    toggleDivider: { width: 1, height: 10, backgroundColor: '#ddd' },
-    toggleActive: { color: DARK, backgroundColor: LIME, borderRadius: 100 },
-    toggleActiveRed: { color: '#fff', backgroundColor: '#ef4444', borderRadius: 100 },
+    battPctText: { fontSize: 26, fontWeight: '900', color: DARK, letterSpacing: -1 },
+    battStatus: { fontSize: 8, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+
+    statusSection: { backgroundColor: '#fff', borderRadius: 32, padding: 24, marginBottom: 20, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 20, elevation: 2 },
+    statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f8f8f8' },
+    statusLabel: { fontSize: 15, fontWeight: '800', color: DARK },
+    statusSub: { fontSize: 11, color: '#bbb', fontWeight: '600', marginTop: 2 },
+    toggleWrap: { flexDirection: 'row', backgroundColor: '#f5f5f5', borderRadius: 100, padding: 4, alignItems: 'center' },
+    toggleLabel: { fontSize: 10, fontWeight: '900', color: '#ccc', paddingHorizontal: 14, paddingVertical: 8 },
+    toggleDivider: { width: 1, height: 12, backgroundColor: '#eee' },
+    toggleActive: { color: DARK, backgroundColor: LIME, borderRadius: 100, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
+    toggleActiveRed: { color: '#fff', backgroundColor: '#ef4444', borderRadius: 100, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
+
     actionRow: { flexDirection: 'row', gap: 12 },
-    quickBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 56, borderRadius: 100 },
-    quickBtnText: { color: LIME, fontSize: 15, fontWeight: '800' },
+    quickBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 60, borderRadius: 100, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 4 },
+    quickBtnText: { color: LIME, fontSize: 16, fontWeight: '900', letterSpacing: 0.5 },
 });
