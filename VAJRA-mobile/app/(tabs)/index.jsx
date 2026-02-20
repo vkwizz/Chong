@@ -35,6 +35,7 @@ export default function Dashboard() {
     const voltColor = volt < 2 ? '#ef4444' : volt < 3.5 ? '#f59e0b' : LIME;
 
     const imgScale = useRef(new Animated.Value(1)).current;
+    const battScale = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
         Animated.timing(diagAnim, {
@@ -57,6 +58,13 @@ export default function Dashboard() {
             Animated.timing(imgScale, { toValue: 1.15, duration: 200, useNativeDriver: true }),
             Animated.timing(imgScale, { toValue: 1, duration: 200, useNativeDriver: true }),
         ]).start(() => setShowDiag(true));
+    };
+
+    const onPressBattery = () => {
+        Animated.sequence([
+            Animated.timing(battScale, { toValue: 1.15, duration: 200, useNativeDriver: true }),
+            Animated.timing(battScale, { toValue: 1, duration: 200, useNativeDriver: true }),
+        ]).start(() => setShowBatt(true));
     };
 
     const diagTranslateY = diagAnim.interpolate({
@@ -168,8 +176,8 @@ export default function Dashboard() {
 
                         {/* Battery Energy Card - Wavy Flow Effect */}
                         <TouchableOpacity
-                            activeOpacity={0.9}
-                            onPress={() => setShowBatt(true)}
+                            activeOpacity={1}
+                            onPress={onPressBattery}
                             style={S.batteryCard}
                         >
                             {/* The Wave Fill Background */}
@@ -189,9 +197,9 @@ export default function Dashboard() {
                             <Text style={S.battEnergyLabel}>Battery energy</Text>
 
                             <View style={S.battContent}>
-                                <Image
+                                <Animated.Image
                                     source={require('../../assets/scooter_front.jpeg')}
-                                    style={S.battScooterImage}
+                                    style={[S.battScooterImage, { transform: [{ scale: battScale }] }]}
                                 />
                                 <Text style={S.battPctHuge}>{voltPct.toFixed(0)}%</Text>
                             </View>
@@ -481,7 +489,7 @@ const S = StyleSheet.create({
 
     // Battery Overly Unique Styles
     battTopSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-    uprightScooter: { width: 120, height: 240, resizeMode: 'contain', transform: [{ rotate: '0deg' }] },
+    uprightScooter: { width: 140, height: 280, resizeMode: 'contain', transform: [{ rotate: '90deg' }] },
     battMetricsLeft: { gap: 12, flex: 1, paddingLeft: 20 },
     miniCard: { backgroundColor: '#fff', borderRadius: 20, padding: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
     miniLabel: { fontSize: 10, fontWeight: '800', color: '#999', textTransform: 'uppercase' },
