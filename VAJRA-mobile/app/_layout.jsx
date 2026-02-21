@@ -7,10 +7,7 @@ global.Buffer = Buffer;
 global.process = process;
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-<<<<<<< HEAD
-=======
 import { View, Text, StyleSheet, Dimensions, Animated, Easing, Image } from 'react-native';
->>>>>>> d1d40afe3a5a844bea717eb0c1dbe6c345449a24
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path, Line } from 'react-native-svg';
@@ -44,8 +41,6 @@ function SplashScreenOverlay({ onFinish }) {
         Animated.loop(
             Animated.timing(windAnim, { toValue: -width, duration: 600, easing: Easing.linear, useNativeDriver: true })
         ).start();
-
-        // Note: Scooter animation (bounce/tilt) removed, scooter remains completely static.
 
         // Fade out after 3 seconds
         setTimeout(() => {
@@ -114,7 +109,6 @@ function SplashScreenOverlay({ onFinish }) {
 
                 {/* 3. LAYER: The Scooter (Static White Silhouette Facing Right) */}
                 <View style={{ alignItems: 'center', marginTop: 100, zIndex: 10 }}>
-                    {/* Using the original scooter image, but heavily tinting it white so it perfectly matches the B&W UI */}
                     <Image
                         source={require('../assets/scooter_side1.png')}
                         style={{ width: 220, height: 140, tintColor: '#FFFFFF', opacity: 0.95, transform: [{ scaleX: -1 }] }}
@@ -124,10 +118,7 @@ function SplashScreenOverlay({ onFinish }) {
 
                 {/* 4. LAYER: Minimalist Road (Fast) */}
                 <View style={{ position: 'absolute', top: (height / 2) + 160, width: '100%', height: height / 2 }}>
-                    {/* Glow Line */}
                     <View style={{ height: 1, backgroundColor: '#FFFFFF', opacity: 0.2, shadowColor: '#FFFFFF', shadowRadius: 10, shadowOpacity: 1 }} />
-
-                    {/* Fast Dashed Line */}
                     <View style={{ width: width * 3, height: 2, marginTop: 40, flexDirection: 'row', opacity: 0.5 }}>
                         <Animated.View style={{ flexDirection: 'row', transform: [{ translateX: roadAnim }] }}>
                             {[...Array(20)].map((_, i) => (
@@ -157,22 +148,40 @@ export default function RootLayout() {
     const [packetHistory, setPacketHistory] = useState([]);
     const [voltageHistory, setVoltageHistory] = useState([]);
     const [immobActive, setImmobActive] = useState(false);
-<<<<<<< HEAD
     const [ignitionActive, setIgnitionActive] = useState(false); // unknown until first packet
     const [zones, setZones] = useState([]);
     const [mqttStatus, setMqttStatus] = useState('connecting');
+    const [splashReady, setSplashReady] = useState(false);
 
-    // Track whether we are actually receiving live data so we can skip the sim loop
+    // Track whether we are actually receiving live data
     const mqttConnectedRef = useRef(false);
+    // Persist real hardware data even when offline
+    const hasReceivedHardwareData = useRef(false);
 
-    // ── Helper: ingest a parsed packet into context state ──────────────────────
     const ingestPacket = (pkt) => {
         if (!pkt) return;
+
+        // If we have received hardware data before, but now we are getting manual simulation
+        // (e.g. while disconnected), only update history but keep latestPacket as last hardware data?
+        // Actually, the user wants the UI to SHOW the last passed packet.
+
+        const isSimulated = pkt.isSimulated;
+
+        if (!isSimulated) {
+            hasReceivedHardwareData.current = true;
+        }
+
+        // If we are currently disconnected/simulating BUT we have a real packet in memory,
+        // we should keep the real packet as the 'latestPacket' for display.
+        if (isSimulated && hasReceivedHardwareData.current) {
+            // Only update history/logs, but don't overwrite the main dashboard display
+            setPacketHistory(prev => [pkt, ...prev].slice(0, 50));
+            return;
+        }
 
         setLatestPacket(pkt);
         setPacketHistory(prev => [pkt, ...prev].slice(0, 50));
 
-        // Update voltage history only when the packet actually carries voltage
         if (pkt.analogVoltage !== null && pkt.analogVoltage !== undefined) {
             const t = new Date().toLocaleTimeString('en', {
                 hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
@@ -180,10 +189,6 @@ export default function RootLayout() {
             setVoltageHistory(prev => [...prev, { t, v: pkt.analogVoltage }].slice(-30));
         }
 
-        // Update ignition & immobilizer ONLY when the device sends those fields.
-        // The hardware sends 1/0 for both every packet — but even for "minimal" packets
-        // the parser will have ignitionStatus = 0 / immobilizerStatus = 0 (device default).
-        // We trust whatever the device sent.
         if (pkt.ignitionStatus !== undefined && pkt.ignitionStatus !== null) {
             setIgnitionActive(pkt.ignitionStatus === 1);
         }
@@ -191,40 +196,30 @@ export default function RootLayout() {
             setImmobActive(pkt.immobilizerStatus === 1);
         }
     };
-=======
-    const [ignitionActive, setIgnitionActive] = useState(true);
-    const [mqttStatus, setMqttStatus] = useState('simulated');
-    const [zones, setZones] = useState([]);   // shared geofence zones
-    const [splashReady, setSplashReady] = useState(false);
->>>>>>> d1d40afe3a5a844bea717eb0c1dbe6c345449a24
 
     useEffect(() => {
-        // ── 1. Connect to HiveMQ ──────────────────────────────────────────────
         connectMQTT((status) => {
             setMqttStatus(status);
             mqttConnectedRef.current = status === 'connected';
         });
 
-        // ── 2. Listen for telemetry packets from HiveMQ ───────────────────────
         const unsubPackets = onPacketReceived((pkt) => {
             ingestPacket(pkt);
         });
 
-        // ── 3. Listen for control commands (immobilizer ACK from broker) ───────
         const unsubControl = onControlReceived(({ state }) => {
-            // Broker ACK — sync local state; hardware will confirm via next telemetry packet
             setImmobilizer(state);
             setImmobActive(state);
             setIgnition(!state);
             setIgnitionActive(!state);
         });
 
-        // ── 4. Simulation loop — only fires when NOT connected to live MQTT ───
-        //       Stops itself the moment a live connection is established.
         const simInterval = setInterval(() => {
-            if (mqttConnectedRef.current) return; // live data → skip simulation
+            if (mqttConnectedRef.current) return;
+            // Generate simulated packet with flag
             const pkt = generateSimulatedPacket();
             if (pkt) {
+                pkt.isSimulated = true;
                 emitPacket(pkt);
                 ingestPacket(pkt);
             }
@@ -237,12 +232,8 @@ export default function RootLayout() {
         };
     }, []);
 
-    // ── Manual immobilizer toggle (from Control screen) ───────────────────────
     const handleImmobToggle = (val) => {
-        // 1. Send command to hardware via MQTT
         publishImmobilizerCommand(val, latestPacket?.imei);
-
-        // 2. Local state updates
         setImmobilizer(val);
         setImmobActive(val);
         setIgnition(!val);

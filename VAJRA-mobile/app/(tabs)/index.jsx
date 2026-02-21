@@ -8,7 +8,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useTelematicsContext } from '../_layout';
 import { useRouter } from 'expo-router';
 import {
-    Shield, FileSearch, Map, Settings,
+    Shield, Map, Settings,
     ChevronDown, Activity, Compass, Calendar, Gauge, User, Bell, LogOut,
     Lock, Headphones, Zap
 } from 'lucide-react-native';
@@ -277,18 +277,10 @@ export default function Dashboard() {
                     <View style={S.actionRow}>
                         <TouchableOpacity
                             onPress={() => router.push('/(tabs)/control')}
-                            style={[S.quickBtn, { backgroundColor: DARK }]}
+                            style={[S.quickBtn, { backgroundColor: DARK, flex: 1 }]}
                         >
                             <Shield color={LIME} size={18} />
-                            <Text style={S.quickBtnText}>Control</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => router.push('/(tabs)/packet')}
-                            style={[S.quickBtn, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd' }]}
-                        >
-                            <FileSearch color={DARK} size={18} />
-                            <Text style={[S.quickBtnText, { color: DARK }]}>Packet</Text>
+                            <Text style={S.quickBtnText}>Control Center</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -352,7 +344,7 @@ export default function Dashboard() {
                         </View>
                         <View style={S.diagCard}>
                             <Text style={S.diagLabel}>SPEED</Text>
-                            <Text style={S.diagValue}>{speed.toFixed(1)} <Text style={{ fontSize: 13 }}>km/h</Text></Text>
+                            <Text style={S.diagValue}>{(speed ?? 0).toFixed(1)} <Text style={{ fontSize: 13 }}>km/h</Text></Text>
                             <Gauge size={16} color="#999" />
                         </View>
                     </View>
@@ -415,12 +407,12 @@ export default function Dashboard() {
                         <View style={{ flexDirection: 'row', gap: 16 }}>
                             <View style={S.diagCard}>
                                 <Text style={S.diagLabel}>Max / Current V</Text>
-                                <Text style={S.diagValue}>9.9V <Text style={{ fontSize: 16, color: '#999' }}>/ {volt.toFixed(1)}V</Text></Text>
+                                <Text style={S.diagValue}>9.9V <Text style={{ fontSize: 16, color: '#999' }}>/ {volt !== null ? volt.toFixed(1) : '--'}V</Text></Text>
                             </View>
                             <View style={S.diagCard}>
                                 <Text style={S.diagLabel}>Battery Health</Text>
-                                <Text style={[S.diagValue, { color: Math.min(100, (volt / 9.9) * 100) > 80 ? LIME : Math.min(100, (volt / 9.9) * 100) > 40 ? '#f59e0b' : '#ef4444' }]}>
-                                    {Math.min(100, (volt / 9.9) * 100).toFixed(0)}%
+                                <Text style={[S.diagValue, { color: volt !== null && Math.min(100, (volt / 9.9) * 100) > 80 ? LIME : volt !== null && Math.min(100, (volt / 9.9) * 100) > 40 ? '#f59e0b' : '#ef4444' }]}>
+                                    {volt !== null ? Math.min(100, (volt / 9.9) * 100).toFixed(0) : '--'}%
                                 </Text>
                             </View>
                         </View>

@@ -43,6 +43,9 @@ export default function TabLayout() {
                 title: 'Network',
                 tabBarIcon: ({ color, size }) => <Radio color={color} size={size - 2} strokeWidth={2.4} />,
             }} />
+            <Tabs.Screen name="packet" options={{
+                href: null,
+            }} />
         </Tabs>
     );
 }

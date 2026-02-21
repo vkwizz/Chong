@@ -111,18 +111,7 @@ export default function AnalyticsScreen() {
                     )}
                 </View>
 
-<<<<<<< HEAD
-                {/* Packet log */}
-                <View style={[S.logCard, { backgroundColor: 'white' }]}>
-                    <Text style={S.chartTitle}>Recent Packets</Text>
-                    {pHistory.slice(0, 10).map((p, i) => (
-                        <View key={i} style={S.logRow}>
-                            <Text style={S.logFrame}>#{(p.dateTime ?? 0).toString().slice(-5)}</Text>
-                            <Text style={S.logVolt}>{p.analogVoltage !== null && p.analogVoltage !== undefined ? p.analogVoltage.toFixed(1) + 'V' : '--V'}</Text>
-                            <Text style={S.logSpeed}>{p.hasGps ? `📍` : 'no gps'}</Text>
-                            <Text style={S.logTime}>{p.dateTimeFormatted?.slice(17, 25) ?? '--:--:--'}</Text>
-=======
-                {/* Packet log container */}
+                {/* Recent Packets Log */}
                 <View style={[S.chartCard, { backgroundColor: '#fff' }]}>
                     <View style={S.logHeaderRow}>
                         <Text style={[S.chartTitle, { marginBottom: 0 }]}>Recent Packets</Text>
@@ -130,8 +119,8 @@ export default function AnalyticsScreen() {
                     </View>
 
                     {pHistory.slice(0, 10).map((p, i) => {
-                        const vv = p.analogVoltage || 0;
-                        const dotColor = vv < 2 ? '#ef4444' : vv < 3.5 ? '#f59e0b' : LIME;
+                        const charge = p.analogVoltage || 0;
+                        const dotColor = charge < 20 ? '#ef4444' : charge < 50 ? '#f59e0b' : LIME;
 
                         return (
                             <View key={i} style={S.packetCard}>
@@ -139,15 +128,15 @@ export default function AnalyticsScreen() {
                                 <View style={S.packetLeft}>
                                     <View style={[S.packetDot, { backgroundColor: dotColor }]} />
                                     <View>
-                                        <Text style={S.packetFrame}>Frame #{p.frameNumber}</Text>
+                                        <Text style={S.packetFrame}>Frame #{p.frameNumber ?? (p.dateTime ?? 0).toString().slice(-5)}</Text>
                                         <Text style={S.packetTime}>{p.dateTimeFormatted?.slice(17, 25) ?? '--:--:--'}</Text>
                                     </View>
                                 </View>
 
-                                {/* Center: Voltage */}
+                                {/* Center: Charge */}
                                 <View style={S.packetCenter}>
                                     <Zap color={DARK} size={12} style={{ opacity: 0.4 }} />
-                                    <Text style={S.packetVolt}>{vv.toFixed(1)}V</Text>
+                                    <Text style={S.packetVolt}>{charge}%</Text>
                                 </View>
 
                                 {/* Right: Speed */}
@@ -162,7 +151,6 @@ export default function AnalyticsScreen() {
                     {pHistory.length === 0 && (
                         <View style={S.emptyLogCard}>
                             <Text style={{ color: '#888', fontSize: 13, fontWeight: '600' }}>No packets received yet.</Text>
->>>>>>> d1d40afe3a5a844bea717eb0c1dbe6c345449a24
                         </View>
                     )}
                 </View>
@@ -211,4 +199,3 @@ const S = StyleSheet.create({
     packetUnit: { fontSize: 8, fontWeight: '800', color: '#999', marginLeft: 2, marginTop: 2 },
     emptyLogCard: { backgroundColor: '#f9f9f9', borderRadius: 16, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: '#f2f2f2' },
 });
-

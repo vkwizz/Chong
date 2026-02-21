@@ -12,14 +12,8 @@ const DARK = '#1C1C1E';
 /* ─────────────────────────────────────────────────────────── */
 function buildMapHTML({ initLat, initLon, initSpeed, initImmob, initVoltPct, initSignal, zones, packetHistory }) {
 
-<<<<<<< HEAD
-  const zonesJson = JSON.stringify(zones.map(z => ({ lat: z.lat, lon: z.lon, radius: z.radius, name: z.name })));
-  // Trail: last 30 positions from packet history (oldest → newest) -- only include packets that have GPS
-=======
   const routeJson = JSON.stringify(HARDCODED_ROUTE.map(p => [p.lat, p.lon]));
   const zonesJson = JSON.stringify(zones.map(z => ({ polygon: z.polygon, name: z.name })));
-  // Trail: last 30 positions from packet history (oldest → newest)
->>>>>>> d1d40afe3a5a844bea717eb0c1dbe6c345449a24
   const trailJson = JSON.stringify(
     [...packetHistory].reverse().filter(p => p.hasGps && p.latitude !== null).slice(0, 30).map(p => [p.latitude, p.longitude])
   );
@@ -539,7 +533,7 @@ export default function MapScreen() {
 
   // Voltage: 10–14.5V lead-acid range → 0–100%
   const volt = p?.analogVoltage ?? null;
-  const voltPct = volt !== null ? Math.min(100, Math.max(0, ((volt - 10) / 4.5) * 100)) : 0;
+  const voltPct = volt !== null ? Math.min(100, Math.max(0, volt)) : 0;
 
   // Rebuild HTML when zones list changes (key forces remount)
   const initialHTML = useMemo(
