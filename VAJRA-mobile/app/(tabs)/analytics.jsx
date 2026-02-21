@@ -111,7 +111,11 @@ export default function AnalyticsScreen() {
                     )}
                 </View>
 
+<<<<<<< HEAD
                 {/* Recent Packets Log */}
+=======
+                {/* Packet log container */}
+>>>>>>> 521722e00f81ccbac12d5374e5e1bf0a94de82ee
                 <View style={[S.chartCard, { backgroundColor: '#fff' }]}>
                     <View style={S.logHeaderRow}>
                         <Text style={[S.chartTitle, { marginBottom: 0 }]}>Recent Packets</Text>

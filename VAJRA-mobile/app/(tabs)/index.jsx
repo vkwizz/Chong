@@ -411,8 +411,13 @@ export default function Dashboard() {
                             </View>
                             <View style={S.diagCard}>
                                 <Text style={S.diagLabel}>Battery Health</Text>
+<<<<<<< HEAD
                                 <Text style={[S.diagValue, { color: volt !== null && Math.min(100, (volt / 9.9) * 100) > 80 ? LIME : volt !== null && Math.min(100, (volt / 9.9) * 100) > 40 ? '#f59e0b' : '#ef4444' }]}>
                                     {volt !== null ? Math.min(100, (volt / 9.9) * 100).toFixed(0) : '--'}%
+=======
+                                <Text style={[S.diagValue, { color: volt !== null ? (Math.min(100, (volt / 9.9) * 100) > 80 ? LIME : Math.min(100, (volt / 9.9) * 100) > 40 ? '#f59e0b' : '#ef4444') : '#999' }]}>
+                                    {volt !== null ? Math.min(100, (volt / 9.9) * 100).toFixed(0) + '%' : '--%'}
+>>>>>>> 521722e00f81ccbac12d5374e5e1bf0a94de82ee
                                 </Text>
                             </View>
                         </View>
