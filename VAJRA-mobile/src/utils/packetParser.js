@@ -33,9 +33,21 @@ export function parsePacket(raw) {
         const crcValid = computedCrc === parseInt(crcStr, 16);
 
         const parts = payload.split(',');
-        if (parts.length < 5) return null;
+        if (parts.length < 4) return null;
 
-        const type = parts[1]; // "DATA"
+        const type = parts[1]; // "DATA" or "CTRL"
+
+        if (type === 'CTRL') {
+            return {
+                raw, crcValid, type,
+                dataLen: parseInt(parts[0], 10),
+                immobilizerStatus: parseInt(parts[2] || '0', 10),
+                ignitionStatus: parseInt(parts[3] || '0', 10),
+            };
+        }
+
+        // DATA packet handling (requires at least 11 parts for full mapping)
+        if (parts.length < 5) return null;
 
         // STICKY RULE: 5th part (index 4) is ALWAYS voltage (RAW PERCENTAGE per user)
         const analogVoltage = parseInt(parts[4], 10);

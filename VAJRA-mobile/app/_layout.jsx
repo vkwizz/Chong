@@ -175,6 +175,17 @@ export default function RootLayout() {
     const ingestPacket = (pkt) => {
         if (!pkt) return;
 
+        // Handle CTRL feedback packets - update statuses but keep existing sensor data (IMEI, GPS, Volt)
+        if (pkt.type === 'CTRL') {
+            if (pkt.ignitionStatus !== undefined) {
+                setIgnitionActive(pkt.ignitionStatus === 1);
+            }
+            if (pkt.immobilizerStatus !== undefined) {
+                setImmobActive(pkt.immobilizerStatus === 1);
+            }
+            return;
+        }
+
         // If we have received hardware data before, but now we are getting manual simulation
         // (e.g. while disconnected), only update history but keep latestPacket as last hardware data?
         // Actually, the user wants the UI to SHOW the last passed packet.
