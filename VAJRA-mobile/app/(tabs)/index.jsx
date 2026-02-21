@@ -415,12 +415,12 @@ export default function Dashboard() {
                         <View style={{ flexDirection: 'row', gap: 16 }}>
                             <View style={S.diagCard}>
                                 <Text style={S.diagLabel}>Max / Current V</Text>
-                                <Text style={S.diagValue}>9.9V <Text style={{ fontSize: 16, color: '#999' }}>/ {volt.toFixed(1)}V</Text></Text>
+                                <Text style={S.diagValue}>9.9V <Text style={{ fontSize: 16, color: '#999' }}>/ {volt !== null ? volt.toFixed(1) : '--'}V</Text></Text>
                             </View>
                             <View style={S.diagCard}>
                                 <Text style={S.diagLabel}>Battery Health</Text>
-                                <Text style={[S.diagValue, { color: Math.min(100, (volt / 9.9) * 100) > 80 ? LIME : Math.min(100, (volt / 9.9) * 100) > 40 ? '#f59e0b' : '#ef4444' }]}>
-                                    {Math.min(100, (volt / 9.9) * 100).toFixed(0)}%
+                                <Text style={[S.diagValue, { color: volt !== null ? (Math.min(100, (volt / 9.9) * 100) > 80 ? LIME : Math.min(100, (volt / 9.9) * 100) > 40 ? '#f59e0b' : '#ef4444') : '#999' }]}>
+                                    {volt !== null ? Math.min(100, (volt / 9.9) * 100).toFixed(0) + '%' : '--%'}
                                 </Text>
                             </View>
                         </View>
