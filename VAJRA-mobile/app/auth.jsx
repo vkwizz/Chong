@@ -78,7 +78,7 @@ export default function AuthScreen() {
                     <View style={S.logoContainer}>
                         <Zap color={LIME} size={42} strokeWidth={2.5} />
                     </View>
-                    <Text style={S.title}>VAJRA</Text>
+                    <Text style={S.title}>PONG</Text>
                     <Text style={S.subtitle}>INTELLIGENT TELEMATICS</Text>
                 </View>
 

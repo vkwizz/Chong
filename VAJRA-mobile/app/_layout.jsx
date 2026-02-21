@@ -329,7 +329,13 @@ export default function RootLayout() {
         publishImmobilizerCommand(val, latestPacket?.imei);
         setImmobilizer(val);
         setImmobActive(val);
-        // Wait for hardware to confirm ignition change via CTRL or DATA packet
+
+        // Per User Request: If immobilizer is activated (val=true), 
+        // we force the ignition UI to OFF because the circuit will be cut.
+        if (val) {
+            setIgnitionActive(false);
+            setIgnition(false); // Update simulator as well
+        }
     };
 
     return (
