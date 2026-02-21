@@ -399,14 +399,30 @@ export default function Dashboard() {
                         </View>
                     </View>
 
-                    <View style={S.battInfoGrid}>
-                        <View style={S.diagCard}>
-                            <Text style={S.diagLabel}>Temperature</Text>
-                            <Text style={S.diagValue}>32°C</Text>
+                    <View style={{ gap: 16, marginBottom: 20 }}>
+                        {/* Row 1: Original Placeholders */}
+                        <View style={{ flexDirection: 'row', gap: 16 }}>
+                            <View style={S.diagCard}>
+                                <Text style={S.diagLabel}>Temperature</Text>
+                                <Text style={S.diagValue}>32°C</Text>
+                            </View>
+                            <View style={S.diagCard}>
+                                <Text style={S.diagLabel}>Battery Life</Text>
+                                <Text style={S.diagValue}>98%</Text>
+                            </View>
                         </View>
-                        <View style={S.diagCard}>
-                            <Text style={S.diagLabel}>Battery Life</Text>
-                            <Text style={S.diagValue}>98%</Text>
+                        {/* Row 2: Live Voltage Metrics */}
+                        <View style={{ flexDirection: 'row', gap: 16 }}>
+                            <View style={S.diagCard}>
+                                <Text style={S.diagLabel}>Max / Current V</Text>
+                                <Text style={S.diagValue}>9.9V <Text style={{ fontSize: 16, color: '#999' }}>/ {volt.toFixed(1)}V</Text></Text>
+                            </View>
+                            <View style={S.diagCard}>
+                                <Text style={S.diagLabel}>Battery Health</Text>
+                                <Text style={[S.diagValue, { color: Math.min(100, (volt / 9.9) * 100) > 80 ? LIME : Math.min(100, (volt / 9.9) * 100) > 40 ? '#f59e0b' : '#ef4444' }]}>
+                                    {Math.min(100, (volt / 9.9) * 100).toFixed(0)}%
+                                </Text>
+                            </View>
                         </View>
                     </View>
 

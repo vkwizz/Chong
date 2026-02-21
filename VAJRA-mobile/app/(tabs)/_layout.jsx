@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
-import { LayoutDashboard, Map, Shield, BarChart2, Activity } from 'lucide-react-native';
+import { LayoutDashboard, Map, Shield, BarChart2, Radio } from 'lucide-react-native';
 
 const LIME = '#B8E840';
 const DARK = '#1C1C1E';
@@ -39,9 +39,9 @@ export default function TabLayout() {
                 title: 'Stats',
                 tabBarIcon: ({ color, size }) => <BarChart2 color={color} size={size - 2} strokeWidth={2.4} />,
             }} />
-            <Tabs.Screen name="packet" options={{
+            <Tabs.Screen name="network" options={{
                 title: 'Network',
-                tabBarIcon: ({ color, size }) => <Activity color={color} size={size - 2} strokeWidth={2.4} />,
+                tabBarIcon: ({ color, size }) => <Radio color={color} size={size - 2} strokeWidth={2.4} />,
             }} />
         </Tabs>
     );

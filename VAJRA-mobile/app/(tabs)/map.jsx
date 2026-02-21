@@ -12,8 +12,14 @@ const DARK = '#1C1C1E';
 /* ─────────────────────────────────────────────────────────── */
 function buildMapHTML({ initLat, initLon, initSpeed, initImmob, initVoltPct, initSignal, zones, packetHistory }) {
 
+<<<<<<< HEAD
   const zonesJson = JSON.stringify(zones.map(z => ({ lat: z.lat, lon: z.lon, radius: z.radius, name: z.name })));
   // Trail: last 30 positions from packet history (oldest → newest) -- only include packets that have GPS
+=======
+  const routeJson = JSON.stringify(HARDCODED_ROUTE.map(p => [p.lat, p.lon]));
+  const zonesJson = JSON.stringify(zones.map(z => ({ polygon: z.polygon, name: z.name })));
+  // Trail: last 30 positions from packet history (oldest → newest)
+>>>>>>> d1d40afe3a5a844bea717eb0c1dbe6c345449a24
   const trailJson = JSON.stringify(
     [...packetHistory].reverse().filter(p => p.hasGps && p.latitude !== null).slice(0, 30).map(p => [p.latitude, p.longitude])
   );
@@ -281,19 +287,22 @@ var trailData = ${trailJson};
 var trailLine = null;
 if(trailData.length > 1){
   trailLine = L.polyline(trailData,{
-    color:'rgba(184,232,64,0.85)',weight:4,opacity:1,lineJoin:'round',
+    color:'rgba(184,232,64,0.4)',weight:2.5,opacity:1,lineJoin:'round',
+    dashArray:'4 10',
     renderer: L.canvas()
   }).addTo(map);
 }
 
 /* ── Faint planned route ghost ── */
-var routeData = ${JSON.stringify(HARDCODED_ROUTE ? HARDCODED_ROUTE.map(p => [p.lat, p.lon]) : [])};
+var routeData = ${routeJson};
 if(routeData.length > 1){
-  L.polyline(routeData,{
-    color:'rgba(255,255,255,0.1)',weight:1.5,opacity:1,
-    dashArray:'6 10',lineJoin:'round'
+  var rOverlay = L.polyline(routeData,{
+    color:'rgba(255,255,255,0.4)',weight:2,opacity:1,
+    dashArray:'6 12',lineJoin:'round'
   }).addTo(map);
+  map.fitBounds(rOverlay.getBounds(), { padding: [40,40] });
 }
+
 
 /* ── Heatmap layer ── */
 var heatData   = ${heatJson};
@@ -307,31 +316,27 @@ if(heatData.length > 0 && L.heatLayer){
 var zones = ${zonesJson};
 var zoneLayers = [];
 zones.forEach(function(z){
-  // Outer glow ring  
-  L.circle([z.lat,z.lon],{
-    radius:z.radius*1.18,color:LIME,weight:0,fillColor:LIME,fillOpacity:0.025
-  }).addTo(map);
-  // Dashed main circle
-  var c = L.circle([z.lat,z.lon],{
-    radius:z.radius,color:LIME,weight:2.5,opacity:0.85,
-    fillColor:LIME,fillOpacity:0.07,dashArray:'8 5'
-  }).addTo(map);
-  // Centre pin
-  L.circleMarker([z.lat,z.lon],{radius:5,color:'#fff',weight:2,fillColor:LIME,fillOpacity:1}).addTo(map);
-  // Tooltip
-  c.bindTooltip('📍 '+z.name,{permanent:true,direction:'top',opacity:1});
-  zoneLayers.push(c);
+  if(z.polygon && z.polygon.length > 2) {
+    // Dashed main polygon
+    var p = L.polygon(z.polygon,{
+      color:LIME,weight:2.5,opacity:0.85,
+      fillColor:LIME,fillOpacity:0.07,dashArray:'8 5'
+    }).addTo(map);
+    // Tooltip
+    p.bindTooltip('📍 '+z.name,{permanent:true,direction:'top',opacity:1});
+    zoneLayers.push(p);
 
-  // CSS pulse animation on the circle element  
-  (function pulse(circle){
-    var expanding=true, opacity=0.07;
-    setInterval(function(){
-      if(expanding){opacity+=0.015;}else{opacity-=0.015;}
-      if(opacity>=0.14){expanding=false;}
-      if(opacity<=0.04){expanding=true;}
-      circle.setStyle({fillOpacity:opacity});
-    },80);
-  })(c);
+    // CSS pulse animation on the polygon element
+    (function pulse(poly){
+      var expanding=true, opacity=0.07;
+      setInterval(function(){
+        if(expanding){opacity+=0.015;}else{opacity-=0.015;}
+        if(opacity>=0.14){expanding=false;}
+        if(opacity<=0.04){expanding=true;}
+        poly.setStyle({fillOpacity:opacity});
+      },80);
+    })(p);
+  }
 });
 
 /* ── Vehicle marker ── */
