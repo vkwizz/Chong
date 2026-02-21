@@ -6,7 +6,6 @@ import {
 import Svg, { Circle, Line, Text as SvgText, Polygon } from 'react-native-svg';
 import WebView from 'react-native-webview';
 import { useTelematicsContext } from '../_layout';
-import { publishImmobilizerCommand } from '../../src/utils/mqttClient';
 import { Shield, AlertTriangle, MapPin, Trash2, PlusCircle, Zap, X, ChevronRight } from 'lucide-react-native';
 
 const LIME = '#B8E840';
@@ -195,7 +194,6 @@ export default function ControlScreen() {
     const confirmToggle = () => {
         setShowImmobModal(false);
         ctx.handleImmobToggle(pendingImmob);
-        publishImmobilizerCommand(pendingImmob);
     };
 
     const handleDrawMsg = (event) => {
