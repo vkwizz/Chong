@@ -217,11 +217,17 @@ export default function RootLayout() {
 
         // Handle CTRL feedback packets - update statuses but keep existing sensor data (IMEI, GPS, Volt)
         if (pkt.type === 'CTRL') {
+            if (!pkt.isSimulated) hasReceivedHardwareData.current = true;
+
             if (pkt.ignitionStatus !== undefined) {
-                setIgnitionActive(pkt.ignitionStatus === 1);
+                const isActive = pkt.ignitionStatus === 1;
+                setIgnitionActive(isActive);
+                if (!pkt.isSimulated) setIgnition(isActive); // Sync simulator to real hardware
             }
             if (pkt.immobilizerStatus !== undefined) {
-                setImmobActive(pkt.immobilizerStatus === 1);
+                const isActive = pkt.immobilizerStatus === 1;
+                setImmobActive(isActive);
+                if (!pkt.isSimulated) setImmobilizer(isActive); // Sync simulator to real hardware
             }
             return;
         }
@@ -255,10 +261,14 @@ export default function RootLayout() {
         }
 
         if (pkt.ignitionStatus !== undefined && pkt.ignitionStatus !== null) {
-            setIgnitionActive(pkt.ignitionStatus === 1);
+            const isActive = pkt.ignitionStatus === 1;
+            setIgnitionActive(isActive);
+            if (!isSimulated) setIgnition(isActive);
         }
         if (pkt.immobilizerStatus !== undefined && pkt.immobilizerStatus !== null) {
-            setImmobActive(pkt.immobilizerStatus === 1);
+            const isActive = pkt.immobilizerStatus === 1;
+            setImmobActive(isActive);
+            if (!isSimulated) setImmobilizer(isActive);
         }
     };
 
