@@ -3,7 +3,7 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     TextInput, Modal, Alert,
 } from 'react-native';
-import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Text as SvgText, Polygon } from 'react-native-svg';
 import WebView from 'react-native-webview';
 import { useTelematicsContext } from '../_layout';
 import { publishImmobilizerCommand } from '../../src/utils/mqttClient';
@@ -15,29 +15,21 @@ const CREAM = '#F2EDE8';
 const RED = '#ef4444';
 const AMBER = '#f59e0b';
 
-/* ─── SVG circular geofence preview ─── */
-function GeoCirclePreview({ inside, dist, radius, size = 160 }) {
+/* ─── SVG polygonal geofence preview ─── */
+function GeoPolygonPreview({ inside, size = 160 }) {
     const cx = size / 2;
     const cy = size / 2;
     const r = size * 0.36;
-    const ratio = Math.min(dist / radius, 1.55);
-    // vehicle dot: centred if inside, pushed out if outside
-    const dotX = inside ? cx + (dist / radius) * r * 0.6 : cx + r * ratio * 0.88;
-    const dotY = cy;
     const color = inside ? LIME : RED;
+    // Abstract hexagon
+    const pts = `${cx},${cy - r} ${cx + r * 0.86},${cy - r * 0.5} ${cx + r * 0.86},${cy + r * 0.5} ${cx},${cy + r} ${cx - r * 0.86},${cy + r * 0.5} ${cx - r * 0.86},${cy - r * 0.5}`;
     return (
         <Svg width={size} height={size}>
-            {/* pulse ring */}
-            <Circle cx={cx} cy={cy} r={r + 12} stroke={color} strokeWidth={0.8} strokeDasharray="3 5" fill="none" opacity={0.18} />
-            {/* main geofence circle */}
-            <Circle cx={cx} cy={cy} r={r} stroke={color} strokeWidth={2.5} fill={color} fillOpacity={0.07} />
-            {/* crosshair at centre */}
+            <Polygon points={pts} stroke={color} strokeWidth={2.5} fill={color} fillOpacity={0.07} strokeDasharray="6 4" />
             <Line x1={cx - 7} y1={cy} x2={cx + 7} y2={cy} stroke={color} strokeWidth={1.5} opacity={0.4} />
             <Line x1={cx} y1={cy - 7} x2={cx} y2={cy + 7} stroke={color} strokeWidth={1.5} opacity={0.4} />
-            {/* vehicle dot */}
-            <Circle cx={dotX} cy={dotY} r={8} fill={color} opacity={0.9} />
-            <Circle cx={dotX} cy={dotY} r={3.5} fill="#fff" />
-            {/* status label */}
+            <Circle cx={inside ? cx + 10 : cx + 70} cy={inside ? cy + 10 : cy - 10} r={8} fill={color} opacity={0.9} />
+            <Circle cx={inside ? cx + 10 : cx + 70} cy={inside ? cy + 10 : cy - 10} r={3.5} fill="#fff" />
             <SvgText x={cx} y={size - 4} textAnchor="middle" fill={color} fontSize={9} fontWeight="800" opacity={0.85}>
                 {inside ? 'INSIDE ZONE' : 'OUTSIDE ZONE'}
             </SvgText>
@@ -45,8 +37,54 @@ function GeoCirclePreview({ inside, dist, radius, size = 160 }) {
     );
 }
 
-/* ─── Leaflet map HTML ─── */
+/* ─── Leaflet map HTML for drawing polygons ─── */
+function buildDrawHTML(centerLat, centerLon, polygon) {
+    return `<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body,#map { width:100%; height:100%; background:#0d1117; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+var map = L.map('map',{zoomControl:false,attributionControl:false}).setView([${centerLat},${centerLon}],15);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+
+var pts = ${JSON.stringify(polygon)};
+var poly = L.polygon(pts, {color: '#B8E840', weight: 2.5, fillColor: '#B8E840', fillOpacity: 0.15, dashArray:'8 5'}).addTo(map);
+
+var markers = [];
+function drawR() {
+  markers.forEach(m => map.removeLayer(m)); markers = [];
+  pts.forEach(p => {
+    var cIcon = L.divIcon({html:'<div style="width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid #B8E840"></div>',className:'',iconAnchor:[6,6]});
+    var m = L.marker(p, {icon: cIcon}).addTo(map);
+    markers.push(m);
+  });
+}
+drawR();
+
+map.on('click', function(e) {
+  window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'add', lat: e.latlng.lat, lon: e.latlng.lng }));
+});
+window.updatePoly = function(newPts) {
+  pts = newPts;
+  poly.setLatLngs(newPts);
+  drawR();
+};
+</script>
+</body></html>`;
+}
+
+/* ─── Leaflet map HTML for polygonal preview ─── */
 function buildZoneMapHTML(zone, vehicleLat, vehicleLon) {
+    const polyStr = JSON.stringify(zone.polygon || []);
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -72,23 +110,44 @@ function buildZoneMapHTML(zone, vehicleLat, vehicleLon) {
 <div class="info">
   <div>
     <div class="zone-name">${zone.name}</div>
-    <div class="zone-meta">📍 ${zone.lat.toFixed(5)}, ${zone.lon.toFixed(5)} &nbsp;·&nbsp; r = ${zone.radius} m</div>
+    <div class="zone-meta">📍 Polygonal Zone · ${zone.polygon ? zone.polygon.length : 0} points</div>
   </div>
   <div id="pill" class="pill" style="background:rgba(184,232,64,0.14);color:#B8E840;">INSIDE</div>
 </div>
 <script>
-var map = L.map('map',{zoomControl:true,attributionControl:false}).setView([${zone.lat},${zone.lon}],15);
+var polyPts = ${polyStr};
+var map = L.map('map',{zoomControl:true,attributionControl:false});
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
-L.circle([${zone.lat},${zone.lon}],{
-  radius:${zone.radius}, color:'#B8E840', weight:2.5,
+
+var p = L.polygon(polyPts, {
+  color:'#B8E840', weight:2.5,
   fillColor:'#B8E840', fillOpacity:0.08, dashArray:'8 5'
 }).addTo(map);
-var cIcon = L.divIcon({html:'<div style="width:10px;height:10px;border-radius:50%;background:#B8E840;border:2px solid #fff"></div>',className:'',iconAnchor:[5,5]});
-L.marker([${zone.lat},${zone.lon}],{icon:cIcon}).addTo(map);
+if(polyPts.length > 0) map.fitBounds(p.getBounds(), {padding: [30,30]});
+
 var vIcon = L.divIcon({html:'<div style="font-size:26px;filter:drop-shadow(0 0 6px #B8E840)">🛵</div>',className:'',iconAnchor:[13,13]});
 var vm = L.marker([${vehicleLat},${vehicleLon}],{icon:vIcon}).addTo(map);
-function hav(a,b,c,d){var R=6371000,t=x=>x*Math.PI/180,dA=t(c-a),dB=t(d-b),q=Math.sin(dA/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(dB/2)**2;return R*2*Math.atan2(Math.sqrt(q),Math.sqrt(1-q));}
-function upd(){var d=hav(${zone.lat},${zone.lon},${vehicleLat},${vehicleLon}),ins=d<=${zone.radius},p=document.getElementById('pill');p.style.background=ins?'rgba(184,232,64,0.14)':'rgba(239,68,68,0.12)';p.style.color=ins?'#B8E840':'#ef4444';p.textContent=ins?'INSIDE':'OUTSIDE ('+Math.round(d)+'m)';}
+
+function isInside(lat, lon, vs) {
+    if(!vs || vs.length < 3) return false;
+    var x = lat, y = lon;
+    var inside = false;
+    for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        var xi = vs[i][0], yi = vs[i][1];
+        var xj = vs[j][0], yj = vs[j][1];
+        var intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+function upd(){
+    var ins = isInside(${vehicleLat}, ${vehicleLon}, polyPts);
+    var pEl = document.getElementById('pill');
+    pEl.style.background=ins?'rgba(184,232,64,0.14)':'rgba(239,68,68,0.12)';
+    pEl.style.color=ins?'#B8E840':'#ef4444';
+    pEl.textContent=ins?'INSIDE':'OUTSIDE';
+}
 upd();
 window.updateVehicle=function(a,b){vm.setLatLng([a,b]);upd();};
 </script>
@@ -107,15 +166,22 @@ export default function ControlScreen() {
     const [pendingImmob, setPendingImmob] = useState(false);
     const zones = ctx?.zones ?? [];
     const setZones = ctx?.setZones ?? (() => { });
-    const [showGeoModal, setShowGeoModal] = useState(false);
+    const [geoModalOpen, setGeoModalOpen] = useState(false);
     const [geoName, setGeoName] = useState('');
-    const [geoRadius, setGeoRadius] = useState('500');
-    const [geoLat, setGeoLat] = useState('');
-    const [geoLon, setGeoLon] = useState('');
+    const [geoPolygon, setGeoPolygon] = useState([]);
+
     const [mapZone, setMapZone] = useState(null);
     const mapWebRef = useRef(null);
+    const drawWebRef = useRef(null);
     const zoneMapHtmlRef = useRef(null); // frozen HTML for zone map
+    const drawHtmlRef = useRef(''); // frozen HTML for drawing
     const prevInsideRef = useRef({});
+
+    const openDrawModal = () => {
+        drawHtmlRef.current = buildDrawHTML(lat, lon, []);
+        setGeoName(''); setGeoPolygon([]);
+        setGeoModalOpen(true);
+    };
 
     // Freeze zone map HTML when zone is opened — never changes after that
     const openZoneMap = (zone) => {
@@ -130,27 +196,40 @@ export default function ControlScreen() {
         publishImmobilizerCommand(pendingImmob);
     };
 
-    const addZone = () => {
-        const r = parseInt(geoRadius, 10);
-        const la = parseFloat(geoLat || lat);
-        const lo = parseFloat(geoLon || lon);
-        if (!geoName.trim()) { Alert.alert('Name required', 'Enter a zone name.'); return; }
-        if (isNaN(r) || r < 50) { Alert.alert('Invalid radius', 'Radius must be ≥ 50 m.'); return; }
-        setZones(prev => [...prev, { id: Date.now().toString(), name: geoName.trim(), radius: r, lat: la, lon: lo }]);
-        setGeoName(''); setGeoRadius('500'); setGeoLat(''); setGeoLon('');
-        setShowGeoModal(false);
+    const handleDrawMsg = (event) => {
+        const data = JSON.parse(event.nativeEvent.data);
+        if (data.type === 'add') {
+            const newPts = [...geoPolygon, [data.lat, data.lon]];
+            setGeoPolygon(newPts);
+            drawWebRef.current?.injectJavaScript(`window.updatePoly(${JSON.stringify(newPts)});true;`);
+        }
     };
+
+    const addZone = () => {
+        if (!geoName.trim()) { Alert.alert('Name required', 'Enter a zone name.'); return; }
+        if (geoPolygon.length < 3) { Alert.alert('Invalid Polygon', 'Draw at least 3 points on the map.'); return; }
+        setZones(prev => [...prev, { id: Date.now().toString(), name: geoName.trim(), polygon: geoPolygon }]);
+        setGeoName(''); setGeoPolygon([]);
+        setGeoModalOpen(false);
+    };
+
     const removeZone = (id) => {
         delete prevInsideRef.current[id];
         setZones(prev => prev.filter(z => z.id !== id));
         if (mapZone?.id === id) setMapZone(null);
     };
 
-    const distance = (z) => {
-        const R = 6371000, rad = d => d * Math.PI / 180;
-        const dLat = rad(lat - z.lat), dLon = rad(lon - z.lon);
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(z.lat)) * Math.cos(rad(lat)) * Math.sin(dLon / 2) ** 2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const isInsidePolygon = (locLat, locLon, polygon) => {
+        if (!polygon || polygon.length < 3) return false;
+        let x = locLat, y = locLon;
+        let inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            let xi = polygon[i][0], yi = polygon[i][1];
+            let xj = polygon[j][0], yj = polygon[j][1];
+            let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
     };
 
     /* live vehicle update in map modal */
@@ -161,7 +240,7 @@ export default function ControlScreen() {
     /* auto-immobilize on breach */
     useEffect(() => {
         zones.forEach(zone => {
-            const dist = distance(zone), inside = dist <= zone.radius;
+            const inside = isInsidePolygon(lat, lon, zone.polygon);
             const was = prevInsideRef.current[zone.id];
             if (was === undefined) { prevInsideRef.current[zone.id] = inside; return; }
             if (was && !inside && !immob) {
@@ -260,7 +339,7 @@ export default function ControlScreen() {
                         <Text style={S.geoTitle}>Geofencing</Text>
                         <Text style={S.geoSub}>Auto-immobilize on zone exit</Text>
                     </View>
-                    <TouchableOpacity onPress={() => setShowGeoModal(true)} style={S.addBtn}>
+                    <TouchableOpacity onPress={openDrawModal} style={S.addBtn}>
                         <PlusCircle size={16} color={DARK} />
                         <Text style={S.addBtnText}>Add Zone</Text>
                     </TouchableOpacity>
@@ -272,18 +351,16 @@ export default function ControlScreen() {
                             <MapPin size={40} color={LIME} />
                         </View>
                         <Text style={S.emptyTitle}>No zones set up</Text>
-                        <Text style={S.emptyText}>Add a geofence zone to automatically stop{'\n'}the vehicle when it leaves the area.</Text>
-                        <TouchableOpacity onPress={() => setShowGeoModal(true)} style={S.emptyBtn}>
+                        <Text style={S.emptyText}>Add a polygonal geofence to automatically{'\n'}stop the vehicle when it leaves the area.</Text>
+                        <TouchableOpacity onPress={openDrawModal} style={S.emptyBtn}>
                             <PlusCircle size={16} color={DARK} />
-                            <Text style={S.emptyBtnText}>Create First Zone</Text>
+                            <Text style={S.emptyBtnText}>Draw First Zone</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
                     zones.map(zone => {
-                        const dist = distance(zone);
-                        const inside = dist <= zone.radius;
+                        const inside = isInsidePolygon(lat, lon, zone.polygon);
                         const color = inside ? LIME : RED;
-                        const pct = Math.max(0, Math.min(100, (1 - dist / zone.radius) * 100));
                         return (
                             <TouchableOpacity
                                 key={zone.id}
@@ -299,7 +376,7 @@ export default function ControlScreen() {
                                         </View>
                                         <View>
                                             <Text style={S.zoneName}>{zone.name}</Text>
-                                            <Text style={S.zoneMeta}>r = {zone.radius} m</Text>
+                                            <Text style={S.zoneMeta}>Polygon · {zone.polygon.length} points</Text>
                                         </View>
                                     </View>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -316,20 +393,12 @@ export default function ControlScreen() {
                                 {/* Main body: circle preview left, stats right */}
                                 <View style={S.zoneBody}>
                                     <View style={S.zoneCircleWrap}>
-                                        <GeoCirclePreview inside={inside} dist={dist} radius={zone.radius} size={160} />
+                                        <GeoPolygonPreview inside={inside} size={160} />
                                     </View>
 
                                     <View style={S.zoneStats}>
-                                        {/* distance bar */}
-                                        <Text style={S.zoneStatHead}>Distance from centre</Text>
-                                        <Text style={[S.zoneStatBig, { color }]}>{Math.round(dist)} m</Text>
-                                        <View style={S.progressTrack}>
-                                            <View style={[S.progressFill, {
-                                                width: `${Math.min(dist / zone.radius, 1) * 100}%`,
-                                                backgroundColor: color,
-                                            }]} />
-                                        </View>
-                                        <Text style={S.zoneStatSub}>of {zone.radius} m radius</Text>
+                                        <Text style={S.zoneStatHead}>Geometry</Text>
+                                        <Text style={[S.zoneStatBig, { color }]}>{zone.polygon.length} pts</Text>
 
                                         <View style={S.divider} />
 
@@ -338,14 +407,8 @@ export default function ControlScreen() {
                                             <Text style={[S.zoneStatVal, { color }]}>{inside ? 'Safe' : 'Breached'}</Text>
                                         </View>
                                         <View style={S.zoneStatRow}>
-                                            <Text style={S.zoneStatLabel}>Remaining</Text>
-                                            <Text style={[S.zoneStatVal, { color }]}>
-                                                {inside ? `${Math.round(zone.radius - dist)} m` : '—'}
-                                            </Text>
-                                        </View>
-                                        <View style={S.zoneStatRow}>
-                                            <Text style={S.zoneStatLabel}>Lat / Lon</Text>
-                                            <Text style={S.zoneStatVal}>{zone.lat.toFixed(3)}, {zone.lon.toFixed(3)}</Text>
+                                            <Text style={S.zoneStatLabel}>Vertices</Text>
+                                            <Text style={[S.zoneStatVal, { color }]}>{zone.polygon.length}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -386,27 +449,37 @@ export default function ControlScreen() {
                 </View>
             </Modal>
 
-            {/* ── Add Zone Modal ── */}
-            <Modal visible={showGeoModal} transparent animationType="slide">
-                <View style={S.overlay}>
-                    <View style={S.sheet}>
-                        <View style={S.handle} />
-                        <Text style={S.modalTitle}>📍 Add Geofence Zone</Text>
-                        <Text style={S.modalBody}>Leave coordinates blank to use the vehicle's current GPS position.</Text>
-                        <Text style={S.inputLabel}>Zone Name</Text>
-                        <TextInput style={S.input} placeholder="e.g. Home, Office" placeholderTextColor="#bbb" value={geoName} onChangeText={setGeoName} />
-                        <Text style={S.inputLabel}>Radius (metres)</Text>
-                        <TextInput style={S.input} placeholder="500" placeholderTextColor="#bbb" keyboardType="numeric" value={geoRadius} onChangeText={setGeoRadius} />
-                        <Text style={S.inputLabel}>Centre Latitude (optional)</Text>
-                        <TextInput style={S.input} placeholder={`${lat.toFixed(5)} (current)`} placeholderTextColor="#bbb" keyboardType="numeric" value={geoLat} onChangeText={setGeoLat} />
-                        <Text style={S.inputLabel}>Centre Longitude (optional)</Text>
-                        <TextInput style={S.input} placeholder={`${lon.toFixed(5)} (current)`} placeholderTextColor="#bbb" keyboardType="numeric" value={geoLon} onChangeText={setGeoLon} />
-                        <TouchableOpacity onPress={addZone} style={[S.modalBtn, { backgroundColor: LIME, marginTop: 10 }]}>
-                            <Text style={[S.modalBtnText, { color: DARK }]}>Create Zone</Text>
+            {/* ── Draw Zone Modal ── */}
+            <Modal visible={geoModalOpen} transparent animationType="slide">
+                <View style={{ flex: 1, backgroundColor: DARK }}>
+                    <View style={S.mapHeader}>
+                        <View>
+                            <Text style={S.mapHeaderTitle}>Draw Polygon Zone</Text>
+                            <Text style={S.mapHeaderSub}>Tap on the map to add boundaries</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setGeoModalOpen(false)} style={S.mapCloseBtn}>
+                            <X size={20} color="#fff" />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setShowGeoModal(false)} style={S.cancelBtn}>
-                            <Text style={S.cancelText}>Cancel</Text>
-                        </TouchableOpacity>
+                    </View>
+                    <WebView
+                        ref={drawWebRef}
+                        source={{ html: drawHtmlRef.current }}
+                        onMessage={handleDrawMsg}
+                        style={{ flex: 1 }}
+                        javaScriptEnabled domStorageEnabled
+                    />
+                    <View style={{ padding: 20, backgroundColor: DARK, borderTopWidth: 1, borderColor: '#333' }}>
+                        <Text style={[S.inputLabel, { color: '#ccc' }]}>Zone Name</Text>
+                        <TextInput style={[S.input, { backgroundColor: '#1C1C1E', color: '#fff', borderColor: '#444' }]} placeholder="e.g. Office Area" placeholderTextColor="#666" value={geoName} onChangeText={setGeoName} />
+
+                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 15 }}>
+                            <TouchableOpacity onPress={() => { setGeoPolygon([]); drawWebRef.current?.injectJavaScript(`window.updatePoly([]);true;`); }} style={[S.modalBtn, { flex: 1, backgroundColor: '#333', marginTop: 0 }]}>
+                                <Text style={[S.modalBtnText, { color: '#fff' }]}>Clear</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={addZone} style={[S.modalBtn, { flex: 2, backgroundColor: LIME, marginTop: 0 }]}>
+                                <Text style={[S.modalBtnText, { color: DARK }]}>Save Zone ({geoPolygon.length} pts)</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -417,7 +490,7 @@ export default function ControlScreen() {
                     <View style={S.mapHeader}>
                         <View>
                             <Text style={S.mapHeaderTitle}>{mapZone?.name}</Text>
-                            <Text style={S.mapHeaderSub}>Circular geofence · r = {mapZone?.radius} m</Text>
+                            <Text style={S.mapHeaderSub}>Polygonal geofence · {mapZone?.polygon?.length || 0} pts</Text>
                         </View>
                         <TouchableOpacity onPress={() => setMapZone(null)} style={S.mapCloseBtn}>
                             <X size={20} color="#fff" />
