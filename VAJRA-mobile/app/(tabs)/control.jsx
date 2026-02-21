@@ -259,7 +259,6 @@ export default function ControlScreen() {
             {/* ── Header ── */}
             <View style={S.header}>
                 <View>
-                    <Text style={S.headerSub}>Vajra</Text>
                     <Text style={S.headerTitle}>Device Control</Text>
                 </View>
                 <View style={[S.pill, { backgroundColor: immob ? 'rgba(239,68,68,0.12)' : 'rgba(184,232,64,0.12)' }]}>

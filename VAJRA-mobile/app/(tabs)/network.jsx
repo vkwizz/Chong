@@ -65,7 +65,7 @@ export default function NetworkScreen() {
     return (
         <View style={S.root}>
             <View style={S.header}>
-                <Text style={S.headerTitle}>📡 Network Diagnostics</Text>
+                <Text style={S.headerTitle}>Network Diagnostics</Text>
                 <View style={[S.pill, { backgroundColor: mqttColor + '18' }]}>
                     <View style={[S.dot, { backgroundColor: mqttColor }]} />
                     <Text style={[S.pillText, { color: mqttColor }]}>{mqtt.toUpperCase()}</Text>
