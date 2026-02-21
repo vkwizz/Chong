@@ -171,6 +171,7 @@ export default function RootLayout() {
     const [zones, setZones] = useState([]);
     const [mqttStatus, setMqttStatus] = useState('connecting');
     const [splashReady, setSplashReady] = useState(false);
+    const lastPublishedState = useRef(null);
 
     // Track whether we are actually receiving live data
     const mqttConnectedRef = useRef(false);
@@ -336,6 +337,10 @@ export default function RootLayout() {
     }, []);
 
     const handleImmobToggle = (val) => {
+        // PREVENT DOUBLE COMMANDS: Strict check against the last sent value
+        if (lastPublishedState.current === val) return;
+        lastPublishedState.current = val;
+
         publishImmobilizerCommand(val, latestPacket?.imei);
         setImmobilizer(val);
         setImmobActive(val);

@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    Animated, Dimensions, Image,
+    Animated, Dimensions, Image, Easing
 } from 'react-native';
 import WebView from 'react-native-webview';
 import Svg, { Path } from 'react-native-svg';
@@ -33,6 +33,8 @@ export default function Dashboard() {
     const settingsAnim = useRef(new Animated.Value(0)).current;
     const imgScale = useRef(new Animated.Value(1)).current;
     const battScale = useRef(new Animated.Value(1)).current;
+    const detailFadeAnim = useRef(new Animated.Value(0)).current;
+    const scooterSlideAnim = useRef(new Animated.Value(0)).current;
 
     const p = ctx?.latestPacket;
     const immob = ctx?.immobActive ?? false;
@@ -75,10 +77,34 @@ export default function Dashboard() {
     }, [showSettings]);
 
     const onPressHero = () => {
+        // 1. Hero card "Pop"
         Animated.sequence([
             Animated.timing(imgScale, { toValue: 1.08, duration: 180, useNativeDriver: true }),
             Animated.timing(imgScale, { toValue: 1, duration: 180, useNativeDriver: true }),
-        ]).start(() => setShowDiag(true));
+        ]).start();
+
+        setShowDiag(true);
+
+        // 2. Cinematic Reset & Staggered Reveal
+        scooterSlideAnim.setValue(-100); // Start from above/deep
+        detailFadeAnim.setValue(0);
+
+        Animated.parallel([
+            Animated.timing(scooterSlideAnim, {
+                toValue: 0,
+                duration: 900,
+                delay: 100,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+            }),
+            Animated.timing(detailFadeAnim, {
+                toValue: 1,
+                duration: 600,
+                delay: 450,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            })
+        ]).start();
     };
 
     const onSelectDataRate = (rate) => {
@@ -301,7 +327,7 @@ export default function Dashboard() {
                     <Activity color={LIME} size={20} />
                 </View>
 
-                <View style={S.diagContent}>
+                <Animated.View style={[S.diagContent, { opacity: detailFadeAnim }]}>
                     <View style={S.diagTopRow}>
                         <View style={S.diagGridLeft}>
                             <View style={S.diagCard}>
@@ -349,15 +375,15 @@ export default function Dashboard() {
                         </View>
                     </View>
 
-                    <View style={S.diagScooterContainer}>
-                        <Image
+                    <Animated.View style={[S.diagScooterContainer, { transform: [{ translateY: scooterSlideAnim }] }]}>
+                        <Animated.Image
                             source={require('../../assets/scooter_side1.png')}
-                            style={S.diagScooterImage}
+                            style={[S.diagScooterImage, { opacity: detailFadeAnim }]}
                             width={300}
                             height={300}
                         />
-                    </View>
-                </View>
+                    </Animated.View>
+                </Animated.View>
             </Animated.View>
 
             {/* ── Battery Analysis Overlay ── */}
