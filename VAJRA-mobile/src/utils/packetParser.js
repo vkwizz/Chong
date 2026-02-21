@@ -35,9 +35,26 @@ export function parsePacket(raw) {
         const crcValid = computedCrc === parseInt(crcStr, 16);
 
         const parts = payload.split(',');
-        if (parts.length < 5) return null;
+        if (parts.length < 3) return null;
 
-        const type = parts[1]; // "DATA"
+        const type = parts[1]; // "DATA" or "CTRL"
+
+        if (type === 'CTRL') {
+            // $8,CTRL,ign,immob*CRC
+            // parts[2] = ignition (0 or 1)
+            // parts[3] = immobilizer (0 or 1)
+            const ignitionStatus = parseInt(parts[2], 10);
+            const immobilizerStatus = parseInt(parts[3], 10);
+
+            return {
+                raw, crcValid, type,
+                ignitionStatus: ignitionStatus === 1 ? 1 : 0,
+                immobilizerStatus: immobilizerStatus === 1 ? 1 : 0,
+                isControlPacket: true
+            };
+        }
+
+        if (parts.length < 5) return null;
 
         // Index 2 is Ignition (3rd part)
         const ignitionStatus = parseInt(parts[2], 10);

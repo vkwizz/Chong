@@ -179,6 +179,15 @@ export default function RootLayout() {
             return;
         }
 
+        if (pkt.isControlPacket) {
+            // CTRL packets ONLY update the toggle states, they don't overwrite the main dashboard data (lat/lon/volt)
+            if (pkt.ignitionStatus !== undefined) setIgnitionActive(pkt.ignitionStatus === 1);
+            if (pkt.immobilizerStatus !== undefined) setImmobActive(pkt.immobilizerStatus === 1);
+            // We still log them in history for debugging if needed
+            setPacketHistory(prev => [pkt, ...prev].slice(0, 50));
+            return;
+        }
+
         setLatestPacket(pkt);
         setPacketHistory(prev => [pkt, ...prev].slice(0, 50));
 
