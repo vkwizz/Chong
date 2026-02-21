@@ -14,11 +14,7 @@ function buildMapHTML({ initLat, initLon, initSpeed, initImmob, initVoltPct, ini
 
   const routeJson = JSON.stringify(HARDCODED_ROUTE.map(p => [p.lat, p.lon]));
   const zonesJson = JSON.stringify(zones.map(z => ({ polygon: z.polygon, name: z.name })));
-<<<<<<< HEAD
-=======
-
   // Trail: last 30 positions from packet history (oldest → newest) -- only include packets that have GPS
->>>>>>> 521722e00f81ccbac12d5374e5e1bf0a94de82ee
   const trailJson = JSON.stringify(
     [...packetHistory].reverse().filter(p => p.hasGps && p.latitude !== null).slice(0, 30).map(p => [p.latitude, p.longitude])
   );

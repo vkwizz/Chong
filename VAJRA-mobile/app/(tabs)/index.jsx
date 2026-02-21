@@ -235,11 +235,11 @@ export default function Dashboard() {
                                     style={[S.battScooterImage, { transform: [{ scale: battScale }] }]}
                                 />
                                 <Text style={[S.battPctHuge, { color: voltColor }]}>
-                                    {volt !== null ? voltPct.toFixed(0) + '%' : '--'}
+                                    {volt != null ? voltPct.toFixed(0) + '%' : '--'}
                                 </Text>
                             </View>
                             <Text style={S.powerSaveLabel}>
-                                {volt !== null
+                                {volt != null
                                     ? (voltPct > 20 ? (volt.toFixed(1) + 'V · Standard mode') : '⚠️ Low battery')
                                     : 'Waiting for data...'}
                             </Text>
@@ -306,7 +306,7 @@ export default function Dashboard() {
                         <View style={S.diagGridLeft}>
                             <View style={S.diagCard}>
                                 <Text style={S.diagLabel}>Total km</Text>
-                                <Text style={S.diagValue}>{odemeter.toFixed(1)} km</Text>
+                                <Text style={S.diagValue}>{(odemeter ?? 0).toFixed(1)} km</Text>
                                 <Compass size={16} color="#999" />
                             </View>
                             <View style={S.diagCard}>
@@ -323,7 +323,7 @@ export default function Dashboard() {
                                 <View style={[S.diagChargeFill, { height: `${voltPct}%`, backgroundColor: voltColor }]} />
                             </View>
                             <Text style={[S.diagChargeText, { color: voltColor }]}>
-                                {volt !== null ? voltPct.toFixed(0) + '%' : '--'}
+                                {volt != null ? voltPct.toFixed(0) + '%' : '--'}
                             </Text>
                         </View>
                     </View>
@@ -407,17 +407,12 @@ export default function Dashboard() {
                         <View style={{ flexDirection: 'row', gap: 16 }}>
                             <View style={S.diagCard}>
                                 <Text style={S.diagLabel}>Max / Current V</Text>
-                                <Text style={S.diagValue}>9.9V <Text style={{ fontSize: 16, color: '#999' }}>/ {volt !== null ? volt.toFixed(1) : '--'}V</Text></Text>
+                                <Text style={S.diagValue}>9.9V <Text style={{ fontSize: 16, color: '#999' }}>/ {volt != null ? volt.toFixed(1) : '--'}V</Text></Text>
                             </View>
                             <View style={S.diagCard}>
                                 <Text style={S.diagLabel}>Battery Health</Text>
-<<<<<<< HEAD
-                                <Text style={[S.diagValue, { color: volt !== null && Math.min(100, (volt / 9.9) * 100) > 80 ? LIME : volt !== null && Math.min(100, (volt / 9.9) * 100) > 40 ? '#f59e0b' : '#ef4444' }]}>
-                                    {volt !== null ? Math.min(100, (volt / 9.9) * 100).toFixed(0) : '--'}%
-=======
-                                <Text style={[S.diagValue, { color: volt !== null ? (Math.min(100, (volt / 9.9) * 100) > 80 ? LIME : Math.min(100, (volt / 9.9) * 100) > 40 ? '#f59e0b' : '#ef4444') : '#999' }]}>
-                                    {volt !== null ? Math.min(100, (volt / 9.9) * 100).toFixed(0) + '%' : '--%'}
->>>>>>> 521722e00f81ccbac12d5374e5e1bf0a94de82ee
+                                <Text style={[S.diagValue, { color: volt != null ? (Math.min(100, (volt / 9.9) * 100) > 80 ? LIME : Math.min(100, (volt / 9.9) * 100) > 40 ? '#f59e0b' : '#ef4444') : '#999' }]}>
+                                    {volt != null ? Math.min(100, (volt / 9.9) * 100).toFixed(0) + '%' : '--%'}
                                 </Text>
                             </View>
                         </View>
@@ -429,7 +424,7 @@ export default function Dashboard() {
                             <View style={[S.horizChargeFill, { width: `${voltPct}%`, backgroundColor: voltColor }]} />
                         </View>
                         <Text style={S.diagValue}>
-                            {volt !== null ? volt.toFixed(1) + ' V  (' + voltPct.toFixed(0) + '%)' : 'No data'}
+                            {volt != null ? volt.toFixed(1) + ' V  (' + voltPct.toFixed(0) + '%)' : 'No data'}
                         </Text>
                     </View>
                 </View>
