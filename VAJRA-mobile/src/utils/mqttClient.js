@@ -53,19 +53,26 @@ export function connectMQTT(onStatus) {
     });
     client.on('message', (topic, message) => {
         const raw = message.toString();
-        if (topic === MQTT_CONFIG.topics.control) {
-            try {
-                const cmd = JSON.parse(raw);
-                if (cmd.command === 'SET_DO') {
-                    const state = cmd.state === 1 || cmd.state === true;
-                    immobilizerListeners.forEach(cb => cb({ state, acknowledged: true }));
-                }
-            } catch { }
-            return;
+        const isControl = topic.endsWith('/down');
+        const isTelemetry = topic.endsWith('/up');
+
+        // 1. Try JSON parsing first (for control commands or specific feedback)
+        try {
+            const cmd = JSON.parse(raw);
+            if (isControl && cmd.command === 'SET_DO') {
+                const state = cmd.state === 1 || cmd.state === true;
+                immobilizerListeners.forEach(cb => cb({ state, acknowledged: true }));
+                return;
+            }
+        } catch {
+            // Not JSON, continue to packet parsing
         }
-        let parsed;
-        try { parsed = JSON.parse(raw); } catch { parsed = parsePacket(raw); }
-        if (parsed) listeners.forEach(cb => cb(parsed));
+
+        // 2. Try raw packet parsing ($DATA or $CTRL strings)
+        const parsed = parsePacket(raw);
+        if (parsed) {
+            listeners.forEach(cb => cb(parsed));
+        }
     });
     client.on('error', (err) => { console.error('[MQTT]', err.message); onStatus?.('error'); });
     client.on('reconnect', () => onStatus?.('reconnecting'));

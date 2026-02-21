@@ -41,8 +41,8 @@ export function parsePacket(raw) {
             return {
                 raw, crcValid, type,
                 dataLen: parseInt(parts[0], 10),
-                immobilizerStatus: parseInt(parts[2] || '0', 10),
-                ignitionStatus: parseInt(parts[3] || '0', 10),
+                ignitionStatus: parseInt(parts[2] || '0', 10),   // Index 2 is DIY (Ignition)
+                immobilizerStatus: parseInt(parts[3] || '0', 10), // Index 3 is DO1 (Immobilizer)
             };
         }
 
