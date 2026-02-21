@@ -289,8 +289,7 @@ export default function RootLayout() {
         publishImmobilizerCommand(val, latestPacket?.imei);
         setImmobilizer(val);
         setImmobActive(val);
-        setIgnition(!val);
-        setIgnitionActive(!val);
+        // Wait for hardware to confirm ignition change via CTRL or DATA packet
     };
 
     return (
