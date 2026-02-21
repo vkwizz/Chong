@@ -239,20 +239,7 @@ export default function ControlScreen() {
         mapWebRef.current?.injectJavaScript(`window.updateVehicle&&window.updateVehicle(${lat},${lon});true;`);
     }, [lat, lon]);
 
-    /* auto-immobilize on breach */
-    useEffect(() => {
-        zones.forEach(zone => {
-            const inside = isInsidePolygon(lat, lon, zone.polygon);
-            const was = prevInsideRef.current[zone.id];
-            if (was === undefined) { prevInsideRef.current[zone.id] = inside; return; }
-            if (was && !inside && !immob) {
-                ctx.handleImmobToggle(true);
-                publishImmobilizerCommand(true);
-                Alert.alert('🚨 Geofence Breach!', `Vehicle left "${zone.name}". Immobilizer activated.`, [{ text: 'OK' }]);
-            }
-            prevInsideRef.current[zone.id] = inside;
-        });
-    }, [lat, lon]);
+    /* auto-immobilize logic has been moved to global RootLayout for background persistence */
 
     return (
         <View style={S.root}>

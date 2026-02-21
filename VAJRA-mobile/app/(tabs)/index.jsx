@@ -36,8 +36,8 @@ export default function Dashboard() {
 
     const p = ctx?.latestPacket;
     const immob = ctx?.immobActive ?? false;
-    // Use context ignitionActive — persists even when minimal packets (no ignition field) arrive
-    const ign = immob ? false : (ctx?.ignitionActive ?? false);
+    // Use context ignitionActive — reflects raw hardware signal (DI1)
+    const ign = ctx?.ignitionActive ?? false;
     const speed = p?.speed ?? 0;
     const volt = p?.analogVoltage ?? null;
     // User requested to use raw value directly as battery percentage

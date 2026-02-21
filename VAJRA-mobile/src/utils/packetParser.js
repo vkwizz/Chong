@@ -2,14 +2,12 @@
  * Telematics Packet Parser — Strictly following Hardware Command
  * 
  * USER COMMAND: "the 5 part from the data packet is always the voltage"
- * USER COMMAND: "when the 3 value in the packet that is the ignition value is 0..."
- * 
  * Mapping:
  * Index 0: Length
  * Index 1: Type ("DATA")
- * Index 2: IGNITION (3rd part) <-- LATEST COMMAND
- * Index 3: IMEI (4th part)
- * Index 4: VOLTAGE (5th part) <-- PERSISTENT COMMAND
+ * Index 2: IMEI
+ * Index 3: Sequence
+ * Index 4: VOLTAGE (5th part) <-- LATEST COMMAND
  * Index 5: Timestamp
  * Index 6: Lat
  * Index 7: Lon
@@ -35,34 +33,15 @@ export function parsePacket(raw) {
         const crcValid = computedCrc === parseInt(crcStr, 16);
 
         const parts = payload.split(',');
-        if (parts.length < 3) return null;
-
-        const type = parts[1]; // "DATA" or "CTRL"
-
-        if (type === 'CTRL') {
-            // $8,CTRL,ign,immob*CRC
-            // parts[2] = ignition (0 or 1)
-            // parts[3] = immobilizer (0 or 1)
-            const ignitionStatus = parseInt(parts[2], 10);
-            const immobilizerStatus = parseInt(parts[3], 10);
-
-            return {
-                raw, crcValid, type,
-                ignitionStatus: ignitionStatus === 1 ? 1 : 0,
-                immobilizerStatus: immobilizerStatus === 1 ? 1 : 0,
-                isControlPacket: true
-            };
-        }
-
         if (parts.length < 5) return null;
 
-        // Index 2 is Ignition (3rd part)
-        const ignitionStatus = parseInt(parts[2], 10);
-        // Index 3 is IMEI (4th part)
-        const imei = parts[3];
-        // Index 4 is Voltage (5th part)
+        const type = parts[1]; // "DATA"
+
+        // STICKY RULE: 5th part (index 4) is ALWAYS voltage (RAW PERCENTAGE per user)
         const analogVoltage = parseInt(parts[4], 10);
 
+        const imei = parts[2];
+        const seq = parts[3];
         const ts = parts[5];
         const latVal = parts[6];
         const lonVal = parts[7];
@@ -78,11 +57,11 @@ export function parsePacket(raw) {
         return {
             raw, crcValid, imei, type,
             dataLen: parseInt(parts[0], 10),
-            frameNumber: timestamp % 10000,
+            frameNumber: parseInt(seq || '0', 10),
             timestamp,
             fixStatus: 1,
-            ignitionStatus: ignitionStatus === 1 ? 1 : 0,
-            immobilizerStatus: 0,
+            ignitionStatus: parseInt(parts[9] || '1', 10),
+            immobilizerStatus: parseInt(parts[10] || '0', 10),
             dateTime: timestamp,
             dateTimeFormatted: new Date(timestamp * 1000).toUTCString(),
             latitude: hasGps ? latRaw / 1_000_000 : null,
@@ -97,15 +76,15 @@ export function parsePacket(raw) {
     }
 }
 
-export function buildPacket({ imei, latitude, longitude, analogVoltage, dateTime, speed = 0, ignitionStatus = 1 }) {
+export function buildPacket({ imei, latitude, longitude, analogVoltage, dateTime, speed = 0, ignitionStatus = 1, immobilizerStatus = 0 }) {
     const ts = dateTime ?? Math.floor(Date.now() / 1000);
     const latRaw = Math.round((latitude ?? 0) * 1_000_000);
     const lonRaw = Math.round((longitude ?? 0) * 1_000_000);
-    const voltRaw = Math.round((analogVoltage ?? 0));
-    const speedRaw = Math.round(speed * 100);
+    const voltRaw = Math.round((analogVoltage ?? 0) * 100);
+    const speedRaw = Math.round(speed * 10).toFixed(0);
 
-    // len,DATA,ign,IMEI,VOLT,ts,lat,lon,speed
-    const inner = `DATA,${ignitionStatus},${imei},${voltRaw},${ts},${latRaw},${lonRaw},${speedRaw}`;
+    // len,DATA,IMEI,seq,VOLT,ts,lat,lon,speed,ign,immob
+    const inner = `DATA,${imei},0,${voltRaw},${ts},${latRaw},${lonRaw},${speedRaw},${ignitionStatus},${immobilizerStatus}`;
     const payload = `${inner.length + 3},${inner}`;
     const crc = computeXorCrc(payload).toString(16).toUpperCase();
     return `$${payload}*${crc}`;

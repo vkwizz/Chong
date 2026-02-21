@@ -7,10 +7,24 @@ global.Buffer = Buffer;
 global.process = process;
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, Animated, Easing, Image } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Animated, Easing, Image, Alert } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path, Line } from 'react-native-svg';
+
+/** ─── Global Utility: Geofence Check ─── */
+const isInsidePolygon = (locLat, locLon, polygon) => {
+    if (!polygon || polygon.length < 3) return false;
+    let x = locLat, y = locLon;
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        let xi = polygon[i][0], yi = polygon[i][1];
+        let xj = polygon[j][0], yj = polygon[j][1];
+        let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+};
 
 const { width, height } = Dimensions.get('window');
 const LIME = '#B8E840';
@@ -179,15 +193,6 @@ export default function RootLayout() {
             return;
         }
 
-        if (pkt.isControlPacket) {
-            // CTRL packets ONLY update the toggle states, they don't overwrite the main dashboard data (lat/lon/volt)
-            if (pkt.ignitionStatus !== undefined) setIgnitionActive(pkt.ignitionStatus === 1);
-            if (pkt.immobilizerStatus !== undefined) setImmobActive(pkt.immobilizerStatus === 1);
-            // We still log them in history for debugging if needed
-            setPacketHistory(prev => [pkt, ...prev].slice(0, 50));
-            return;
-        }
-
         setLatestPacket(pkt);
         setPacketHistory(prev => [pkt, ...prev].slice(0, 50));
 
@@ -206,6 +211,35 @@ export default function RootLayout() {
         }
     };
 
+    // Track geofence breach per zone ID
+    const prevInsideRef = useRef({});
+
+    /** ─── Global Geofence Enforcement ─── */
+    useEffect(() => {
+        if (!latestPacket || !latestPacket.hasGps || zones.length === 0 || immobActive) return;
+
+        const { latitude, longitude } = latestPacket;
+
+        zones.forEach(zone => {
+            const insideNow = isInsidePolygon(latitude, longitude, zone.polygon);
+            const wasInside = prevInsideRef.current[zone.id];
+
+            // If we just crossed the boundary from inside to outside
+            if (wasInside === true && insideNow === false) {
+                // BREACH DETECTED
+                handleImmobToggle(true);
+                Alert.alert(
+                    '🚨 Geofence Breach!',
+                    `Vehicle has left safe zone "${zone.name}".\n\nImmobilizer activated for security.`,
+                    [{ text: 'OK' }]
+                );
+            }
+
+            // Update tracking
+            prevInsideRef.current[zone.id] = insideNow;
+        });
+    }, [latestPacket, zones, immobActive]);
+
     useEffect(() => {
         connectMQTT((status) => {
             setMqttStatus(status);
@@ -219,8 +253,7 @@ export default function RootLayout() {
         const unsubControl = onControlReceived(({ state }) => {
             setImmobilizer(state);
             setImmobActive(state);
-            setIgnition(!state);
-            setIgnitionActive(!state);
+            // Don't auto-flip ignition here, let the next packet from hardware confirm it
         });
 
         const simInterval = setInterval(() => {
