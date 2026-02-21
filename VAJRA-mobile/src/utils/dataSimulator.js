@@ -31,7 +31,7 @@ export const CELLULAR_INFO = {
 };
 
 let routeIndex = 0;
-let analogVoltage = 12.4; // typical 12V lead-acid battery
+let chargePercentage = 98; // User wants raw percentage (0-100)
 let ignitionOn = true;
 let immobilizerOn = false;
 
@@ -39,22 +39,20 @@ export function generateSimulatedPacket() {
     routeIndex = (routeIndex + 1) % (HARDCODED_ROUTE.length - 1);
     const pos = HARDCODED_ROUTE[routeIndex];
 
-    // Simulate small voltage fluctuation (12.0 – 14.5 V range)
-    analogVoltage += (Math.random() - 0.5) * 0.3;
-    analogVoltage = parseFloat(Math.min(14.5, Math.max(10.0, analogVoltage)).toFixed(1));
+    // Simulate small percentage fluctuation
+    chargePercentage += (Math.random() - 0.5) * 0.4;
+    chargePercentage = parseFloat(Math.min(100, Math.max(0, chargePercentage)).toFixed(1));
 
     const nowUtc = Math.floor(Date.now() / 1000);
 
     const rawPacket = buildPacket({
         imei: CELLULAR_INFO.imei,
-        fixStatus: 1,                           // valid GPS fix
         ignitionStatus: ignitionOn ? 1 : 0,
-        immobilizerStatus: immobilizerOn ? 1 : 0,
-        field6: 0,
         latitude: pos.lat,
         longitude: pos.lon,
-        analogVoltage,
+        analogVoltage: chargePercentage,
         dateTime: nowUtc,
+        speed: 0
     });
 
     return parsePacket(rawPacket);

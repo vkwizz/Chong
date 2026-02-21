@@ -41,7 +41,7 @@ export function parsePacket(raw) {
         const analogVoltage = parseInt(parts[4], 10);
 
         const imei = parts[2];
-        const seq = parts[3];
+        const ignitionStatus = parseInt(parts[3], 10); // Index 3 is Ignition (the 4th value)
         const ts = parts[5];
         const latVal = parts[6];
         const lonVal = parts[7];
@@ -57,10 +57,10 @@ export function parsePacket(raw) {
         return {
             raw, crcValid, imei, type,
             dataLen: parseInt(parts[0], 10),
-            frameNumber: parseInt(seq || '0', 10),
+            frameNumber: timestamp % 10000,
             timestamp,
             fixStatus: 1,
-            ignitionStatus: 1,
+            ignitionStatus: ignitionStatus, // 1=ON, 0=OFF
             immobilizerStatus: 0,
             dateTime: timestamp,
             dateTimeFormatted: new Date(timestamp * 1000).toUTCString(),
@@ -76,15 +76,15 @@ export function parsePacket(raw) {
     }
 }
 
-export function buildPacket({ imei, latitude, longitude, analogVoltage, dateTime, speed = 0 }) {
+export function buildPacket({ imei, latitude, longitude, analogVoltage, dateTime, speed = 0, ignitionStatus = 1 }) {
     const ts = dateTime ?? Math.floor(Date.now() / 1000);
     const latRaw = Math.round((latitude ?? 0) * 1_000_000);
     const lonRaw = Math.round((longitude ?? 0) * 1_000_000);
-    const voltRaw = Math.round((analogVoltage ?? 0) * 100);
+    const voltRaw = Math.round((analogVoltage ?? 0));
     const speedRaw = Math.round(speed * 100);
 
-    // len,DATA,IMEI,seq,VOLT,ts,lat,lon,speed
-    const inner = `DATA,${imei},0,${voltRaw},${ts},${latRaw},${lonRaw},${speedRaw}`;
+    // len,DATA,IMEI,ign,VOLT,ts,lat,lon,speed
+    const inner = `DATA,${imei},${ignitionStatus},${voltRaw},${ts},${latRaw},${lonRaw},${speedRaw}`;
     const payload = `${inner.length + 3},${inner}`;
     const crc = computeXorCrc(payload).toString(16).toUpperCase();
     return `$${payload}*${crc}`;
