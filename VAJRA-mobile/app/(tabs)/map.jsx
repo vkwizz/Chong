@@ -12,6 +12,7 @@ const DARK = '#1C1C1E';
 /* ─────────────────────────────────────────────────────────── */
 function buildMapHTML({ initLat, initLon, initSpeed, initImmob, initVoltPct, initSignal, zones, packetHistory }) {
 
+  const routeJson = JSON.stringify(HARDCODED_ROUTE.map(p => [p.lat, p.lon]));
   const zonesJson = JSON.stringify(zones.map(z => ({ lat: z.lat, lon: z.lon, radius: z.radius, name: z.name })));
   // Trail: last 30 positions from packet history (oldest → newest)
   const trailJson = JSON.stringify(
@@ -281,19 +282,22 @@ var trailData = ${trailJson};
 var trailLine = null;
 if(trailData.length > 1){
   trailLine = L.polyline(trailData,{
-    color:'rgba(184,232,64,0.85)',weight:4,opacity:1,lineJoin:'round',
+    color:'rgba(184,232,64,0.4)',weight:2.5,opacity:1,lineJoin:'round',
+    dashArray:'4 10',
     renderer: L.canvas()
   }).addTo(map);
 }
 
 /* ── Faint planned route ghost ── */
-var routeData = ${JSON.stringify(HARDCODED_ROUTE ? HARDCODED_ROUTE.map(p => [p.lat, p.lon]) : [])};
+var routeData = ${routeJson};
 if(routeData.length > 1){
-  L.polyline(routeData,{
-    color:'rgba(255,255,255,0.1)',weight:1.5,opacity:1,
-    dashArray:'6 10',lineJoin:'round'
+  var rOverlay = L.polyline(routeData,{
+    color:'rgba(255,255,255,0.4)',weight:2,opacity:1,
+    dashArray:'6 12',lineJoin:'round'
   }).addTo(map);
+  map.fitBounds(rOverlay.getBounds(), { padding: [40,40] });
 }
+
 
 /* ── Heatmap layer ── */
 var heatData   = ${heatJson};

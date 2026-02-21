@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { useTelematicsContext } from '../_layout';
+import { Navigation, Zap } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 const LIME = '#B8E840';
@@ -27,7 +28,7 @@ export default function AnalyticsScreen() {
     return (
         <View style={S.root}>
             <View style={S.header}>
-                <Text style={S.headerTitle}>📊 Analytics</Text>
+                <Text style={S.headerTitle}>Analytics</Text>
                 <View style={S.pill}>
                     <View style={[S.dot, { backgroundColor: LIME }]} />
                     <Text style={S.pillText}>{pHistory.length} frames</Text>
@@ -90,18 +91,48 @@ export default function AnalyticsScreen() {
                     )}
                 </View>
 
-                {/* Packet log */}
-                <View style={[S.logCard, { backgroundColor: 'white' }]}>
-                    <Text style={S.chartTitle}>Recent Packets</Text>
-                    {pHistory.slice(0, 10).map((p, i) => (
-                        <View key={i} style={S.logRow}>
-                            <Text style={S.logFrame}>#{p.frameNumber}</Text>
-                            <Text style={S.logVolt}>{p.analogVoltage?.toFixed(1)}V</Text>
-                            <Text style={S.logSpeed}>{p.speed?.toFixed(0)} km/h</Text>
-                            <Text style={S.logTime}>{p.dateTimeFormatted?.slice(17, 25) ?? '--:--:--'}</Text>
+                {/* Packet log container */}
+                <View style={[S.chartCard, { backgroundColor: '#fff' }]}>
+                    <View style={S.logHeaderRow}>
+                        <Text style={[S.chartTitle, { marginBottom: 0 }]}>Recent Packets</Text>
+                        <Text style={S.logHeaderSub}>Showing last 10 entries</Text>
+                    </View>
+
+                    {pHistory.slice(0, 10).map((p, i) => {
+                        const vv = p.analogVoltage || 0;
+                        const dotColor = vv < 2 ? '#ef4444' : vv < 3.5 ? '#f59e0b' : LIME;
+
+                        return (
+                            <View key={i} style={S.packetCard}>
+                                {/* Left: Frame + Dot */}
+                                <View style={S.packetLeft}>
+                                    <View style={[S.packetDot, { backgroundColor: dotColor }]} />
+                                    <View>
+                                        <Text style={S.packetFrame}>Frame #{p.frameNumber}</Text>
+                                        <Text style={S.packetTime}>{p.dateTimeFormatted?.slice(17, 25) ?? '--:--:--'}</Text>
+                                    </View>
+                                </View>
+
+                                {/* Center: Voltage */}
+                                <View style={S.packetCenter}>
+                                    <Zap color={DARK} size={12} style={{ opacity: 0.4 }} />
+                                    <Text style={S.packetVolt}>{vv.toFixed(1)}V</Text>
+                                </View>
+
+                                {/* Right: Speed */}
+                                <View style={S.packetRight}>
+                                    <Text style={S.packetSpeed}>{p.speed?.toFixed(0)}</Text>
+                                    <Text style={S.packetUnit}>km/h</Text>
+                                    <Navigation color={LIME} size={14} style={{ marginLeft: 6, transform: [{ rotate: '45deg' }] }} />
+                                </View>
+                            </View>
+                        );
+                    })}
+                    {pHistory.length === 0 && (
+                        <View style={S.emptyLogCard}>
+                            <Text style={{ color: '#888', fontSize: 13, fontWeight: '600' }}>No packets received yet.</Text>
                         </View>
-                    ))}
-                    {pHistory.length === 0 && <Text style={{ color: '#555', fontSize: 13 }}>No packets yet...</Text>}
+                    )}
                 </View>
 
                 <View style={{ height: 24 }} />
@@ -132,11 +163,20 @@ const S = StyleSheet.create({
     chartCard: { backgroundColor: DARK, borderRadius: 22, padding: 16, marginBottom: 12 },
     chartTitle: { fontSize: 13, color: '#555', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 14 },
     chartPlaceholder: { height: 100, alignItems: 'center', justifyContent: 'center' },
-    logCard: { backgroundColor: DARK, borderRadius: 22, padding: 18 },
-    logRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' },
-    logFrame: { color: '#bbb', fontFamily: 'Courier', fontSize: 11, width: 42 },
-    logVolt: { color: LIME, fontFamily: 'Courier', fontSize: 12, fontWeight: '700', width: 42 },
-    logSpeed: { color: '#888', fontFamily: 'Courier', fontSize: 11, width: 56 },
-    logTime: { color: '#aaa', fontFamily: 'Courier', fontSize: 11, textAlign: 'right' },
+
+    // Recent Packets
+    logHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16, paddingHorizontal: 4 },
+    logHeaderSub: { fontSize: 10, color: '#aaa', fontWeight: '600', marginBottom: 2 },
+    packetCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9f9f9', borderRadius: 16, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#f2f2f2', elevation: 0 },
+    packetLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1.2 },
+    packetDot: { width: 10, height: 10, borderRadius: 5 },
+    packetFrame: { fontSize: 11, fontWeight: '800', color: DARK },
+    packetTime: { fontSize: 9, color: '#999', fontWeight: '700', marginTop: 2 },
+    packetCenter: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1, backgroundColor: 'rgba(0,0,0,0.03)', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
+    packetVolt: { fontSize: 11, fontWeight: '800', color: DARK, fontFamily: 'Courier' },
+    packetRight: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flex: 1 },
+    packetSpeed: { fontSize: 13, fontWeight: '900', color: DARK, fontVariant: ['tabular-nums'] },
+    packetUnit: { fontSize: 8, fontWeight: '800', color: '#999', marginLeft: 2, marginTop: 2 },
+    emptyLogCard: { backgroundColor: '#f9f9f9', borderRadius: 16, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: '#f2f2f2' },
 });
 
