@@ -7,10 +7,7 @@ global.Buffer = Buffer;
 global.process = process;
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-<<<<<<< HEAD
-=======
 import { View, Text, StyleSheet, Dimensions, Animated, Easing, Image } from 'react-native';
->>>>>>> d1d40afe3a5a844bea717eb0c1dbe6c345449a24
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path, Line } from 'react-native-svg';
@@ -157,10 +154,10 @@ export default function RootLayout() {
     const [packetHistory, setPacketHistory] = useState([]);
     const [voltageHistory, setVoltageHistory] = useState([]);
     const [immobActive, setImmobActive] = useState(false);
-<<<<<<< HEAD
     const [ignitionActive, setIgnitionActive] = useState(false); // unknown until first packet
     const [zones, setZones] = useState([]);
     const [mqttStatus, setMqttStatus] = useState('connecting');
+    const [splashReady, setSplashReady] = useState(false);
 
     // Track whether we are actually receiving live data so we can skip the sim loop
     const mqttConnectedRef = useRef(false);
@@ -191,13 +188,6 @@ export default function RootLayout() {
             setImmobActive(pkt.immobilizerStatus === 1);
         }
     };
-=======
-    const [ignitionActive, setIgnitionActive] = useState(true);
-    const [mqttStatus, setMqttStatus] = useState('simulated');
-    const [zones, setZones] = useState([]);   // shared geofence zones
-    const [splashReady, setSplashReady] = useState(false);
->>>>>>> d1d40afe3a5a844bea717eb0c1dbe6c345449a24
-
     useEffect(() => {
         // ── 1. Connect to HiveMQ ──────────────────────────────────────────────
         connectMQTT((status) => {

@@ -111,17 +111,6 @@ export default function AnalyticsScreen() {
                     )}
                 </View>
 
-<<<<<<< HEAD
-                {/* Packet log */}
-                <View style={[S.logCard, { backgroundColor: 'white' }]}>
-                    <Text style={S.chartTitle}>Recent Packets</Text>
-                    {pHistory.slice(0, 10).map((p, i) => (
-                        <View key={i} style={S.logRow}>
-                            <Text style={S.logFrame}>#{(p.dateTime ?? 0).toString().slice(-5)}</Text>
-                            <Text style={S.logVolt}>{p.analogVoltage !== null && p.analogVoltage !== undefined ? p.analogVoltage.toFixed(1) + 'V' : '--V'}</Text>
-                            <Text style={S.logSpeed}>{p.hasGps ? `📍` : 'no gps'}</Text>
-                            <Text style={S.logTime}>{p.dateTimeFormatted?.slice(17, 25) ?? '--:--:--'}</Text>
-=======
                 {/* Packet log container */}
                 <View style={[S.chartCard, { backgroundColor: '#fff' }]}>
                     <View style={S.logHeaderRow}>
@@ -162,7 +151,6 @@ export default function AnalyticsScreen() {
                     {pHistory.length === 0 && (
                         <View style={S.emptyLogCard}>
                             <Text style={{ color: '#888', fontSize: 13, fontWeight: '600' }}>No packets received yet.</Text>
->>>>>>> d1d40afe3a5a844bea717eb0c1dbe6c345449a24
                         </View>
                     )}
                 </View>
