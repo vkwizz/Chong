@@ -1,3 +1,7 @@
+/**
+ * Offline / demo simulation — generates packets in the REAL hardware format.
+ * Used ONLY when the MQTT broker is not reachable (sim fallback).
+ */
 import { buildPacket, parsePacket } from './packetParser';
 
 export const HARDCODED_ROUTE = [
@@ -24,37 +28,36 @@ export const GEOFENCE_POLYGON = [
 
 export const CELLULAR_INFO = {
     imei: '887744556677882',
-    operator: '03', operatorName: 'Airtel',
-    signalStrength: 21, mcc: 404, mnc: 10,
 };
 
-let frameCounter = 1;
 let routeIndex = 0;
-let analogVoltage = 3.8;
+let analogVoltage = 12.4; // typical 12V lead-acid battery
 let ignitionOn = true;
 let immobilizerOn = false;
 
 export function generateSimulatedPacket() {
     routeIndex = (routeIndex + 1) % (HARDCODED_ROUTE.length - 1);
     const pos = HARDCODED_ROUTE[routeIndex];
-    analogVoltage += (Math.random() - 0.5) * 0.2;
-    analogVoltage = Math.min(5.0, Math.max(0.0, parseFloat(analogVoltage.toFixed(1))));
-    const speed = parseFloat((30 + Math.random() * 60).toFixed(2));
-    const sig = Math.max(5, Math.min(31, CELLULAR_INFO.signalStrength + Math.floor((Math.random() - 0.5) * 4)));
+
+    // Simulate small voltage fluctuation (12.0 – 14.5 V range)
+    analogVoltage += (Math.random() - 0.5) * 0.3;
+    analogVoltage = parseFloat(Math.min(14.5, Math.max(10.0, analogVoltage)).toFixed(1));
+
     const nowUtc = Math.floor(Date.now() / 1000);
-    const packet = buildPacket({
+
+    const rawPacket = buildPacket({
         imei: CELLULAR_INFO.imei,
-        packetStatus: 1, frameNumber: frameCounter++,
-        operator: CELLULAR_INFO.operator, signalStrength: sig,
-        mcc: CELLULAR_INFO.mcc, mnc: CELLULAR_INFO.mnc,
-        fixStatus: 1, latitude: pos.lat, nsInd: 'N',
-        longitude: pos.lon, ewInd: 'E',
-        hdop: 1.2, pdop: 1.8, speed,
+        fixStatus: 1,                           // valid GPS fix
         ignitionStatus: ignitionOn ? 1 : 0,
         immobilizerStatus: immobilizerOn ? 1 : 0,
-        analogVoltage, dateTime: nowUtc,
+        field6: 0,
+        latitude: pos.lat,
+        longitude: pos.lon,
+        analogVoltage,
+        dateTime: nowUtc,
     });
-    return parsePacket(packet);
+
+    return parsePacket(rawPacket);
 }
 
 export function setIgnition(val) { ignitionOn = val; }

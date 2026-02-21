@@ -8,8 +8,10 @@ const MQTT_PASSWORD = 'VajraSecure2024';
 export const MQTT_CONFIG = {
     brokerUrl: `wss://${CLUSTER_URL}:8884/mqtt`,
     topics: {
-        telemetry: 'telematics/device/887744556677882/data',
-        control: 'telematics/device/887744556677882/control',
+        // Matches 'telematics/887744556677882/up'
+        telemetry: 'telematics/+/up',
+        // Assuming control uses a similar 'down' or 'cmd' topic
+        control: 'telematics/+/down',
     },
 };
 
@@ -56,13 +58,18 @@ export function connectMQTT(onStatus) {
     client.on('close', () => { connected = false; onStatus?.('disconnected'); });
 }
 
-export function publishImmobilizerCommand(state) {
+export function publishImmobilizerCommand(state, imei = '887744556677882') {
     const payload = JSON.stringify({
-        command: 'SET_DO', pin: 'DO1',
-        state: state ? 1 : 0, timestamp: Math.floor(Date.now() / 1000),
+        immobilize: state ? 1 : 0,
+        timestamp: Math.floor(Date.now() / 1000),
     });
-    if (client && connected) client.publish(MQTT_CONFIG.topics.control, payload, { qos: 1 });
-    setTimeout(() => immobilizerListeners.forEach(cb => cb({ state, acknowledged: true })), connected ? 500 : 300);
+    const topic = `telematics/${imei}/down`;
+    if (client && connected) {
+        client.publish(topic, payload, { qos: 1 });
+        console.log(`[MQTT] Published to ${topic}: ${payload}`);
+    }
+    // Optimistically update listeners
+    setTimeout(() => immobilizerListeners.forEach(cb => cb({ state, acknowledged: true })), connected ? 300 : 100);
 }
 
 export function publishFrequencyCommand(seconds) {
@@ -74,6 +81,18 @@ export function publishFrequencyCommand(seconds) {
     if (client && connected) {
         client.publish(MQTT_CONFIG.topics.control, payload, { qos: 1 });
         console.log('[MQTT] Published frequency command:', seconds, 's');
+    }
+}
+
+export function publishOptimizerMode(mode, imei = '887744556677882') {
+    const payload = JSON.stringify({
+        mode: mode, // 'HIGH', 'MID', 'LOW'
+        timestamp: Math.floor(Date.now() / 1000),
+    });
+    const topic = `telematics/${imei}/down`;
+    if (client && connected) {
+        client.publish(topic, payload, { qos: 1 });
+        console.log(`[MQTT] Published to ${topic}: ${payload}`);
     }
 }
 

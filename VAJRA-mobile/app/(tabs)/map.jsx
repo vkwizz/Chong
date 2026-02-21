@@ -13,15 +13,15 @@ const DARK = '#1C1C1E';
 function buildMapHTML({ initLat, initLon, initSpeed, initImmob, initVoltPct, initSignal, zones, packetHistory }) {
 
   const zonesJson = JSON.stringify(zones.map(z => ({ lat: z.lat, lon: z.lon, radius: z.radius, name: z.name })));
-  // Trail: last 30 positions from packet history (oldest → newest)
+  // Trail: last 30 positions from packet history (oldest → newest) -- only include packets that have GPS
   const trailJson = JSON.stringify(
-    [...packetHistory].reverse().slice(0, 30).map(p => [p.latitude, p.longitude])
+    [...packetHistory].reverse().filter(p => p.hasGps && p.latitude !== null).slice(0, 30).map(p => [p.latitude, p.longitude])
   );
   // Heatmap points
   const heatJson = JSON.stringify(
-    packetHistory.slice(0, 40).map(p => [p.latitude, p.longitude, 0.6])
+    packetHistory.filter(p => p.hasGps && p.latitude !== null).slice(0, 40).map(p => [p.latitude, p.longitude, 0.6])
   );
-  const signalBars = Math.ceil((initSignal / 31) * 4); // 0-4 bars
+  const signalBars = 3; // real packets don't include signal strength; show 3 bars as default
 
   return `<!DOCTYPE html>
 <html>
@@ -523,19 +523,22 @@ export default function MapScreen() {
   const webRef = useRef(null);
   const p = ctx?.latestPacket;
   const immob = ctx?.immobActive ?? false;
-  const speed = p?.speed ?? 0;
   const zones = ctx?.zones ?? [];
   const packetHistory = ctx?.packetHistory ?? [];
 
+  // Real hardware packets: use null-safe GPS defaults (Bengaluru until first GPS fix)
   const initLat = p?.latitude ?? 12.9716;
   const initLon = p?.longitude ?? 77.5946;
-  const voltPct = Math.min(100, ((p?.analogVoltage ?? 3.8) / 5) * 100);
-  const signal = p?.signalStrength ?? 18;
-  const fixOk = p?.fixStatus === 1;
+  const hasGps = p?.hasGps ?? false;
+  const fixOk = (p?.fixStatus ?? 0) >= 1;
+
+  // Voltage: 10–14.5V lead-acid range → 0–100%
+  const volt = p?.analogVoltage ?? null;
+  const voltPct = volt !== null ? Math.min(100, Math.max(0, ((volt - 10) / 4.5) * 100)) : 0;
 
   // Rebuild HTML when zones list changes (key forces remount)
   const initialHTML = useMemo(
-    () => buildMapHTML({ initLat, initLon, initSpeed: speed, initImmob: immob, initVoltPct: voltPct, initSignal: signal, zones, packetHistory }),
+    () => buildMapHTML({ initLat, initLon, initSpeed: 0, initImmob: immob, initVoltPct: voltPct, initSignal: 3, zones, packetHistory }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [zones.length]
   );
@@ -545,11 +548,11 @@ export default function MapScreen() {
   // This prevents the white-screen flash every 2s when GPS packets arrive.
   const webSource = useMemo(() => ({ html: initialHTML }), [initialHTML]);
 
-  // Push live updates via JS injection only
+  // Push live updates via JS injection only (no WebView reload)
   React.useEffect(() => {
-    if (!p) return;
+    if (!p || !hasGps) return;  // skip if no GPS data in this packet
     webRef.current?.injectJavaScript(
-      `window.updateVehicle && window.updateVehicle(${p.latitude},${p.longitude},${Math.round(speed)},${immob},${voltPct.toFixed(1)},${signal}); true;`
+      `window.updateVehicle && window.updateVehicle(${p.latitude},${p.longitude},0,${immob},${voltPct.toFixed(1)},3); true;`
     );
   }, [p, immob]);
 

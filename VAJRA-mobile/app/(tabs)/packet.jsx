@@ -6,27 +6,21 @@ const LIME = '#B8E840';
 const DARK = '#1C1C1E';
 const CREAM = '#F2EDE8';
 
+// Field definitions matching the real HiveMQ hardware packet format:
+// $<datalen>,<IMEI>,<fixStatus>,<ignition>,<immob>,<field6>,<timestamp>[,<lat>,<lon>,<voltage>]*<CRC>
 const FIELD_DEFS = [
     { key: 'dataLen', label: 'Data Length', section: 'header', color: '#f59e0b' },
     { key: 'imei', label: 'IMEI', section: 'header', color: '#f59e0b' },
-    { key: 'packetStatus', label: 'Packet Status', section: 'data', color: '#10b981', hint: '0=History, 1=Live' },
-    { key: 'frameNumber', label: 'Frame Number', section: 'data', color: '#10b981' },
-    { key: 'operatorCode', label: 'Operator Code', section: 'data', color: '#10b981', hint: '03=Airtel' },
-    { key: 'signalStrength', label: 'Signal Strength', section: 'data', color: '#10b981', hint: '0–31' },
-    { key: 'mcc', label: 'MCC', section: 'data', color: '#10b981', hint: '404=India' },
-    { key: 'mnc', label: 'MNC', section: 'data', color: '#10b981' },
-    { key: 'fixStatus', label: 'Fix Status', section: 'data', color: '#10b981', hint: '1=Valid fix' },
+    { key: 'fixStatus', label: 'Fix Status', section: 'data', color: '#10b981', hint: '1=Valid GPS fix, 0=No fix' },
+    { key: 'ignitionStatus', label: 'Ignition (DI1)', section: 'data', color: '#8b5cf6', hint: '1=ON, 0=OFF' },
+    { key: 'immobilizerStatus', label: 'Immobilizer (DO1)', section: 'data', color: '#ef4444', hint: '1=ACTIVE, 0=OFF' },
+    { key: 'field6', label: 'Field 6', section: 'data', color: '#10b981' },
+    { key: 'dateTime', label: 'Timestamp (Unix)', section: 'data', color: '#f59e0b' },
+    { key: 'dateTimeFormatted', label: 'DateTime (UTC)', section: 'data', color: '#f59e0b' },
     { key: 'latitude', label: 'Latitude', section: 'data', color: LIME },
-    { key: 'nsInd', label: 'N/S Indicator', section: 'data', color: LIME },
     { key: 'longitude', label: 'Longitude', section: 'data', color: LIME },
-    { key: 'ewInd', label: 'E/W Indicator', section: 'data', color: LIME },
-    { key: 'hdop', label: 'HDOP', section: 'data', color: LIME },
-    { key: 'pdop', label: 'PDOP', section: 'data', color: LIME },
-    { key: 'speed', label: 'Speed (km/h)', section: 'data', color: '#3b82f6' },
-    { key: 'ignitionStatus', label: 'Ignition Status', section: 'data', color: '#8b5cf6', hint: '0=OFF, 1=ON' },
-    { key: 'immobilizerStatus', label: 'Immobilizer', section: 'data', color: '#ef4444', hint: '0=OFF, 1=ON' },
-    { key: 'analogVoltage', label: 'Analog Voltage (V)', section: 'data', color: '#f59e0b' },
-    { key: 'dateTime', label: 'DateTime UTC', section: 'data', color: '#f59e0b' },
+    { key: 'hasGps', label: 'GPS Present', section: 'data', color: LIME, hint: 'true when lat/lon present in packet' },
+    { key: 'analogVoltage', label: 'Battery Charge (%)', section: 'data', color: '#f59e0b', hint: 'raw value used directly' },
     { key: 'crcValid', label: 'CRC Valid', section: 'tail', color: '#ef4444' },
 ];
 
@@ -39,7 +33,7 @@ export default function PacketScreen() {
             <View style={S.header}>
                 <View>
                     <Text style={S.headerTitle}>📦 Packet Viewer</Text>
-                    {p && <Text style={S.headerSub}>Frame #{p.frameNumber} · CRC {p.crcValid ? '✅ OK' : '❌ FAIL'}</Text>}
+                    {p && <Text style={S.headerSub}>IMEI {p.imei} · CRC {p.crcValid ? '✅ OK' : '❌ FAIL'}</Text>}
                 </View>
             </View>
 
@@ -80,7 +74,9 @@ export default function PacketScreen() {
                             {FIELD_DEFS.filter(f => f.section === section).map(({ key, label, color, hint }) => {
                                 let val = p?.[key];
                                 if (key === 'crcValid') val = p?.crcValid ? 'VALID' : 'INVALID';
-                                else if (typeof val === 'number') val = val.toString();
+                                else if (key === 'hasGps') val = val ? 'YES' : 'NO';
+                                else if (typeof val === 'number') val = key === 'analogVoltage' ? val.toFixed(2) + ' V' : val.toString();
+                                else if (key === 'latitude' || key === 'longitude') val = val !== null && val !== undefined ? val.toFixed(6) : '--';
                                 else if (val === undefined || val === null) val = '--';
                                 return (
                                     <View key={key} style={S.fieldRow}>

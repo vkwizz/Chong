@@ -12,7 +12,7 @@ import {
     ChevronDown, Activity, Compass, Calendar, Gauge, User, Bell, LogOut,
     Lock, Headphones, Zap
 } from 'lucide-react-native';
-import { publishFrequencyCommand } from '../../src/utils/mqttClient';
+import { publishFrequencyCommand, publishOptimizerMode } from '../../src/utils/mqttClient';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const LIME = '#B8E840';
@@ -35,15 +35,20 @@ export default function Dashboard() {
     const battScale = useRef(new Animated.Value(1)).current;
 
     const p = ctx?.latestPacket;
-    const speed = Math.round(p?.speed ?? 0);
     const immob = ctx?.immobActive ?? false;
-    const ign = immob ? false : (p?.ignitionStatus === 1);
-    const volt = p?.analogVoltage ?? 0;
-    const voltPct = Math.min(100, (volt / 5) * 100);
-    const voltColor = volt < 2 ? '#ef4444' : volt < 3.5 ? '#f59e0b' : LIME;
-
-    // Simulated odometer derived from packet frame count
-    const odemeter = (p?.frameNumber ?? 0) * 0.12;
+    // Use context ignitionActive — persists even when minimal packets (no ignition field) arrive
+    const ign = immob ? false : (ctx?.ignitionActive ?? false);
+    const speed = p?.speed ?? 0;
+    const volt = p?.analogVoltage ?? null;
+    // User requested to use raw value directly as battery percentage
+    const voltPct = volt !== null ? Math.min(100, Math.max(0, volt)) : 0;
+    const voltColor = voltPct < 20 ? '#ef4444' : voltPct < 50 ? '#f59e0b' : LIME;
+    // GPS co-ords — null until first full packet with GPS data
+    const lat = p?.latitude ?? null;
+    const lon = p?.longitude ?? null;
+    const hasGps = p?.hasGps ?? false;
+    // Use timestamp as a proxy for frame number
+    const odemeter = (p?.dateTime ?? 0) % 100000 * 0.00001; // small decorative number
 
     useEffect(() => {
         Animated.timing(diagAnim, {
@@ -78,6 +83,18 @@ export default function Dashboard() {
 
     const onSelectDataRate = (rate) => {
         setDataRate(rate);
+
+        // Map UI labels to Hardware modes: Saver=LOW, Auto=MID, Turbo=HIGH
+        const modeMap = {
+            'saver': 'LOW',
+            'optimized': 'MID',
+            'performance': 'HIGH'
+        };
+
+        const mode = modeMap[rate] || 'MID';
+        publishOptimizerMode(mode, p?.imei);
+
+        // Also send legacy frequency command for backwards compatibility
         const seconds = rate === 'saver' ? 60 : rate === 'performance' ? 1 : 10;
         publishFrequencyCommand(seconds);
     };
@@ -177,9 +194,9 @@ export default function Dashboard() {
                                     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
                                     <style>*{margin:0;padding:0;}#map{width:100%;height:100%;}.leaflet-control-attribution{display:none!important;}</style>
                                     </head><body><div id="map"></div><script>
-                                    var m=L.map('map',{zoomControl:false,attributionControl:false}).setView([${p?.latitude || 12.9716},${p?.longitude || 77.5946}],15);
+                                    var m=L.map('map',{zoomControl:false,attributionControl:false}).setView([${lat ?? 12.9716},${lon ?? 77.5946}],15);
                                     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(m);
-                                    L.circle([${p?.latitude || 12.9716},${p?.longitude || 77.5946}],{color:'#B8E840',fillColor:'#B8E840',fillOpacity:0.5,radius:80}).addTo(m);
+                                    L.circle([${lat ?? 12.9716},${lon ?? 77.5946}],{color:'#B8E840',fillColor:'#B8E840',fillOpacity:0.5,radius:80}).addTo(m);
                                     </script></body></html>` }}
                                     style={S.miniMap}
                                     javaScriptEnabled
@@ -217,9 +234,15 @@ export default function Dashboard() {
                                     source={require('../../assets/scooter_front1.png')}
                                     style={[S.battScooterImage, { transform: [{ scale: battScale }] }]}
                                 />
-                                <Text style={[S.battPctHuge, { color: voltColor }]}>{voltPct.toFixed(0)}%</Text>
+                                <Text style={[S.battPctHuge, { color: voltColor }]}>
+                                    {volt !== null ? voltPct.toFixed(0) + '%' : '--'}
+                                </Text>
                             </View>
-                            <Text style={S.powerSaveLabel}>{voltPct > 20 ? 'Standard mode' : '⚠️ Low battery'}</Text>
+                            <Text style={S.powerSaveLabel}>
+                                {volt !== null
+                                    ? (voltPct > 20 ? (volt.toFixed(1) + 'V · Standard mode') : '⚠️ Low battery')
+                                    : 'Waiting for data...'}
+                            </Text>
                         </TouchableOpacity>
                     </View>
 
@@ -291,7 +314,7 @@ export default function Dashboard() {
                         <View style={S.diagGridLeft}>
                             <View style={S.diagCard}>
                                 <Text style={S.diagLabel}>Total km</Text>
-                                <Text style={S.diagValue}>{odemeter.toFixed(1)}</Text>
+                                <Text style={S.diagValue}>{odemeter.toFixed(1)} km</Text>
                                 <Compass size={16} color="#999" />
                             </View>
                             <View style={S.diagCard}>
@@ -307,7 +330,9 @@ export default function Dashboard() {
                             <View style={S.diagChargeOuter}>
                                 <View style={[S.diagChargeFill, { height: `${voltPct}%`, backgroundColor: voltColor }]} />
                             </View>
-                            <Text style={[S.diagChargeText, { color: voltColor }]}>{voltPct.toFixed(0)}%</Text>
+                            <Text style={[S.diagChargeText, { color: voltColor }]}>
+                                {volt !== null ? voltPct.toFixed(0) + '%' : '--'}
+                            </Text>
                         </View>
                     </View>
 
@@ -326,8 +351,8 @@ export default function Dashboard() {
                             </View>
                         </View>
                         <View style={S.diagCard}>
-                            <Text style={S.diagLabel}>Speed</Text>
-                            <Text style={S.diagValue}>{speed}</Text>
+                            <Text style={S.diagLabel}>SPEED</Text>
+                            <Text style={S.diagValue}>{speed.toFixed(1)} <Text style={{ fontSize: 13 }}>km/h</Text></Text>
                             <Gauge size={16} color="#999" />
                         </View>
                     </View>
@@ -390,7 +415,9 @@ export default function Dashboard() {
                         <View style={S.horizChargeOuter}>
                             <View style={[S.horizChargeFill, { width: `${voltPct}%`, backgroundColor: voltColor }]} />
                         </View>
-                        <Text style={S.diagValue}>{voltPct.toFixed(0)}%</Text>
+                        <Text style={S.diagValue}>
+                            {volt !== null ? volt.toFixed(1) + ' V  (' + voltPct.toFixed(0) + '%)' : 'No data'}
+                        </Text>
                     </View>
                 </View>
             </Animated.View>

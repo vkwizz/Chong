@@ -99,9 +99,11 @@ export default function ControlScreen() {
     const ctx = useTelematicsContext();
     const immob = ctx?.immobActive ?? false;
     // If immob is on, context forces ignition off immediately (before next packet)
-    const ign = immob ? false : (ctx?.latestPacket?.ignitionStatus === 1);
+    const ign = immob ? false : (ctx?.ignitionActive ?? false);
+    // GPS: may be null until first full packet with GPS data arrives
     const lat = ctx?.latestPacket?.latitude ?? 12.9716;
     const lon = ctx?.latestPacket?.longitude ?? 77.5946;
+    const hasGps = ctx?.latestPacket?.hasGps ?? false;
 
     const [showImmobModal, setShowImmobModal] = useState(false);
     const [pendingImmob, setPendingImmob] = useState(false);

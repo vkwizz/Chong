@@ -13,16 +13,23 @@ export default function AnalyticsScreen() {
     const history = ctx?.voltageHistory ?? [];
     const pHistory = ctx?.packetHistory ?? [];
 
-    const voltages = history.length > 0 ? history.map(h => h.v) : [0];
-    const labels = history.length > 0
-        ? history.filter((_, i) => i % Math.max(1, Math.floor(history.length / 6)) === 0).map(h => h.t.slice(0, 5))
+    // Only include readings where voltage was actually present in the packet
+    const validHistory = history.filter(h => h.v !== null && h.v !== undefined);
+    const voltages = validHistory.length > 0 ? validHistory.map(h => h.v) : [0];
+    const labels = validHistory.length > 0
+        ? validHistory.filter((_, i) => i % Math.max(1, Math.floor(validHistory.length / 6)) === 0).map(h => h.t.slice(0, 5))
         : ['--'];
 
-    const min = Math.min(...voltages).toFixed(2);
-    const max = Math.max(...voltages).toFixed(2);
-    const avg = history.length > 0 ? (voltages.reduce((a, b) => a + b, 0) / voltages.length).toFixed(2) : '0.00';
-    const latest = voltages[voltages.length - 1]?.toFixed(1) ?? '0.0';
-    const voltColor = parseFloat(latest) < 2 ? '#ef4444' : parseFloat(latest) < 3.5 ? '#f59e0b' : LIME;
+    const min = voltages.length > 1 ? Math.min(...voltages) : '--';
+    const max = voltages.length > 1 ? Math.max(...voltages) : '--';
+    const avg = validHistory.length > 0 ? (voltages.reduce((a, b) => a + b, 0) / voltages.length).toFixed(0) : '--';
+    const latest = voltages[voltages.length - 1];
+    const latestStr = validHistory.length > 0 ? latest.toString() : null;
+    // Colour based on charge thresholds
+    const voltColor = latestStr === null ? '#aaa'
+        : parseFloat(latestStr) < 20 ? '#ef4444'
+            : parseFloat(latestStr) < 50 ? '#f59e0b'
+                : LIME;
 
     return (
         <View style={S.root}>
@@ -38,14 +45,23 @@ export default function AnalyticsScreen() {
 
                 {/* Voltage big display */}
                 <View style={[S.voltCard, { backgroundColor: 'white' }]}>
-                    <Text style={S.voltLabel}>Current Analog Input (AI1)</Text>
-                    <Text style={[S.voltBig, { color: voltColor }]}>{latest} <Text style={{ fontSize: 20, color: '#444', fontWeight: '400' }}>V</Text></Text>
-                    <Text style={S.voltSub}>0–5V range · ÷10 encoding</Text>
+                    <Text style={S.voltLabel}>Battery Charge Percentage</Text>
+                    <Text style={[S.voltBig, { color: voltColor }]}>
+                        {latestStr !== null ? latestStr : '--'}
+                        <Text style={{ fontSize: 20, color: '#444', fontWeight: '400' }}>%</Text>
+                    </Text>
+                    <Text style={S.voltSub}>
+                        {latestStr !== null
+                            ? `Reading raw value from 5th field directly`
+                            : 'Waiting for packet with data...'}
+                    </Text>
                 </View>
 
                 {/* Stats grid */}
                 <View style={S.statsRow}>
-                    {[['MIN', min + ' V', '#3b82f6'], ['AVG', avg + ' V', LIME], ['MAX', max + ' V', '#ef4444']].map(([label, val, c]) => (
+                    {[['MIN', min !== '--' ? min + '%' : '--', '#3b82f6'],
+                    ['AVG', avg !== '--' ? avg + '%' : '--', LIME],
+                    ['MAX', max !== '--' ? max + '%' : '--', '#ef4444']].map(([label, val, c]) => (
                         <View key={label} style={[S.statCard, { flex: 1, backgroundColor: 'white' }]}>
                             <Text style={[S.statLabel, { color: c }]}>{label}</Text>
                             <Text style={[S.statVal, { color: '#1a1a1a' }]}>{val}</Text>
@@ -55,8 +71,8 @@ export default function AnalyticsScreen() {
 
                 {/* Chart */}
                 <View style={S.chartCard}>
-                    <Text style={S.chartTitle}>Voltage Trend (last {history.length} readings)</Text>
-                    {history.length > 1 ? (
+                    <Text style={S.chartTitle}>Charge Trend (last {validHistory.length} readings)</Text>
+                    {validHistory.length > 1 ? (
                         <LineChart
                             data={{
                                 labels,
@@ -64,13 +80,13 @@ export default function AnalyticsScreen() {
                             }}
                             width={width - 64}
                             height={200}
-                            yAxisSuffix="V"
+                            yAxisSuffix="%"
                             yAxisInterval={1}
                             chartConfig={{
                                 backgroundColor: DARK,
                                 backgroundGradientFrom: DARK,
                                 backgroundGradientTo: '#111',
-                                decimalPlaces: 1,
+                                decimalPlaces: 0,
                                 color: () => LIME,
                                 labelColor: () => '#555',
                                 style: { borderRadius: 16 },
@@ -85,7 +101,11 @@ export default function AnalyticsScreen() {
                         />
                     ) : (
                         <View style={S.chartPlaceholder}>
-                            <Text style={{ color: '#555' }}>Collecting data... ({history.length}/2 needed)</Text>
+                            <Text style={{ color: '#555' }}>
+                                {validHistory.length === 0
+                                    ? 'No voltage data yet—waiting for full GPS packet...'
+                                    : `Collecting data... (${validHistory.length}/2 needed)`}
+                            </Text>
                         </View>
                     )}
                 </View>
@@ -95,9 +115,9 @@ export default function AnalyticsScreen() {
                     <Text style={S.chartTitle}>Recent Packets</Text>
                     {pHistory.slice(0, 10).map((p, i) => (
                         <View key={i} style={S.logRow}>
-                            <Text style={S.logFrame}>#{p.frameNumber}</Text>
-                            <Text style={S.logVolt}>{p.analogVoltage?.toFixed(1)}V</Text>
-                            <Text style={S.logSpeed}>{p.speed?.toFixed(0)} km/h</Text>
+                            <Text style={S.logFrame}>#{(p.dateTime ?? 0).toString().slice(-5)}</Text>
+                            <Text style={S.logVolt}>{p.analogVoltage !== null && p.analogVoltage !== undefined ? p.analogVoltage.toFixed(1) + 'V' : '--V'}</Text>
+                            <Text style={S.logSpeed}>{p.hasGps ? `📍` : 'no gps'}</Text>
                             <Text style={S.logTime}>{p.dateTimeFormatted?.slice(17, 25) ?? '--:--:--'}</Text>
                         </View>
                     ))}

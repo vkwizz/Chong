@@ -1,6 +1,17 @@
 /**
- * Telematics Packet Parser (shared between web + mobile)
- * Format: $<datalen>|<IMEI>|<fields...>|*<CRC_HEX>
+ * Telematics Packet Parser — Strictly following Hardware Command
+ * 
+ * USER COMMAND: "the 5 part from the data packet is always the voltage"
+ * Mapping:
+ * Index 0: Length
+ * Index 1: Type ("DATA")
+ * Index 2: IMEI
+ * Index 3: Sequence
+ * Index 4: VOLTAGE (5th part) <-- LATEST COMMAND
+ * Index 5: Timestamp
+ * Index 6: Lat
+ * Index 7: Lon
+ * Index 8: Speed
  */
 
 export function computeXorCrc(data) {
@@ -11,58 +22,70 @@ export function computeXorCrc(data) {
 
 export function parsePacket(raw) {
     try {
-        if (!raw.startsWith('$')) return null;
+        if (!raw || !raw.startsWith('$')) return null;
+
         const starIdx = raw.lastIndexOf('*');
         if (starIdx === -1) return null;
-        const crcStr = raw.slice(starIdx + 1);
+
+        const crcStr = raw.slice(starIdx + 1).trim();
         const payload = raw.slice(1, starIdx);
-        const crcValid = computeXorCrc(payload) === parseInt(crcStr, 16);
-        const parts = payload.split('|');
-        if (parts.length < 3) return null;
-        const imei = parts[1];
-        const fields = parts.slice(2);
-        if (fields.length < 18) return null;
-        const [packetStatus, frameNumber, operator, signalStrength, mcc, mnc,
-            fixStatus, latRaw, nsInd, lonRaw, ewInd, hdopRaw, pdopRaw, speedRaw,
-            ignitionStatus, immobilizerStatus, analogVoltageRaw, dateTime] = fields;
-        const opMap = { '00': 'Unknown', '01': 'BSNL', '02': 'VI', '03': 'Airtel', '04': 'JIO' };
+        const computedCrc = computeXorCrc(payload);
+        const crcValid = computedCrc === parseInt(crcStr, 16);
+
+        const parts = payload.split(',');
+        if (parts.length < 5) return null;
+
+        const type = parts[1]; // "DATA"
+
+        // STICKY RULE: 5th part (index 4) is ALWAYS voltage (RAW PERCENTAGE per user)
+        const analogVoltage = parseInt(parts[4], 10);
+
+        const imei = parts[2];
+        const seq = parts[3];
+        const ts = parts[5];
+        const latVal = parts[6];
+        const lonVal = parts[7];
+        const speedVal = parts[8];
+
+        const timestamp = parseInt(ts, 10);
+        const speed = speedVal ? parseInt(speedVal, 10) / 100 : 0;
+
+        const latRaw = parseInt(latVal, 10);
+        const lonRaw = parseInt(lonVal, 10);
+        const hasGps = !!(latRaw !== 0 && lonRaw !== 0 && !isNaN(latRaw));
+
         return {
-            raw, crcValid, imei,
-            packetStatus: parseInt(packetStatus),
-            frameNumber: parseInt(frameNumber),
-            operator: opMap[operator] || 'Unknown',
-            operatorCode: operator,
-            signalStrength: parseInt(signalStrength),
-            mcc: parseInt(mcc), mnc: parseInt(mnc),
-            fixStatus: parseInt(fixStatus),
-            latitude: parseInt(latRaw) / 1_000_000,
-            nsInd: parseInt(nsInd) === 0 ? 'N' : 'S',
-            longitude: parseInt(lonRaw) / 1_000_000,
-            ewInd: parseInt(ewInd) === 0 ? 'E' : 'W',
-            hdop: parseInt(hdopRaw) / 100,
-            pdop: parseInt(pdopRaw) / 100,
-            speed: parseInt(speedRaw) / 100,
-            ignitionStatus: parseInt(ignitionStatus),
-            immobilizerStatus: parseInt(immobilizerStatus),
-            analogVoltage: parseInt(analogVoltageRaw) / 10,
-            dateTime: parseInt(dateTime),
-            dateTimeFormatted: new Date(parseInt(dateTime) * 1000).toUTCString(),
+            raw, crcValid, imei, type,
+            dataLen: parseInt(parts[0], 10),
+            frameNumber: parseInt(seq || '0', 10),
+            timestamp,
+            fixStatus: 1,
+            ignitionStatus: 1,
+            immobilizerStatus: 0,
+            dateTime: timestamp,
+            dateTimeFormatted: new Date(timestamp * 1000).toUTCString(),
+            latitude: hasGps ? latRaw / 1_000_000 : null,
+            longitude: hasGps ? lonRaw / 1_000_000 : null,
+            hasGps,
+            analogVoltage,
+            speed
         };
     } catch (e) {
+        console.warn('[Parser Error]', e.message);
         return null;
     }
 }
 
-export function buildPacket({ imei, packetStatus, frameNumber, operator, signalStrength,
-    mcc, mnc, fixStatus, latitude, nsInd, longitude, ewInd, hdop, pdop,
-    speed, ignitionStatus, immobilizerStatus, analogVoltage, dateTime }) {
-    const fields = [packetStatus, frameNumber, operator, signalStrength, mcc, mnc, fixStatus,
-        Math.round(latitude * 1_000_000), nsInd === 'N' ? 0 : 1,
-        Math.round(longitude * 1_000_000), ewInd === 'E' ? 0 : 1,
-        Math.round(hdop * 100), Math.round(pdop * 100), Math.round(speed * 100),
-        ignitionStatus, immobilizerStatus, Math.round(analogVoltage * 10), dateTime,
-    ].join('|');
-    const payload = `${fields.length}|${imei}|${fields}`;
-    const crc = computeXorCrc(payload).toString(16).toUpperCase().padStart(2, '0');
+export function buildPacket({ imei, latitude, longitude, analogVoltage, dateTime, speed = 0 }) {
+    const ts = dateTime ?? Math.floor(Date.now() / 1000);
+    const latRaw = Math.round((latitude ?? 0) * 1_000_000);
+    const lonRaw = Math.round((longitude ?? 0) * 1_000_000);
+    const voltRaw = Math.round((analogVoltage ?? 0) * 100);
+    const speedRaw = Math.round(speed * 100);
+
+    // len,DATA,IMEI,seq,VOLT,ts,lat,lon,speed
+    const inner = `DATA,${imei},0,${voltRaw},${ts},${latRaw},${lonRaw},${speedRaw}`;
+    const payload = `${inner.length + 3},${inner}`;
+    const crc = computeXorCrc(payload).toString(16).toUpperCase();
     return `$${payload}*${crc}`;
 }
