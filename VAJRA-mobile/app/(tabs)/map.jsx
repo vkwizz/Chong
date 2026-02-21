@@ -29,6 +29,16 @@ function buildMapHTML({ initLat, initLon, initSpeed, initImmob, initVoltPct, ini
   );
   const signalBars = 3; // real packets don't include signal strength; show 3 bars as default
 
+  // Generate 40 random EV Charging Stations scattered within ~5km of the initial location
+  const chargingStations = JSON.stringify(
+    [...Array(40)].map((_, i) => ({
+      lat: initLat + (Math.random() - 0.5) * 0.08, // ~5km radius
+      lon: initLon + (Math.random() - 0.5) * 0.08,
+      name: `Vajra Grid Node #${i + 100}`,
+      available: Math.floor(Math.random() * 6) // Random plugins 0-5
+    }))
+  );
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -337,6 +347,32 @@ zones.forEach(function(z){
       },80);
     })(p);
   }
+});
+
+/* ── EV Charging Stations ── */
+var evStations = ${chargingStations};
+evStations.forEach(function(s) {
+    var isAvail = s.available > 0;
+    var color = isAvail ? '#3b82f6' : '#64748b'; // Blue if available, gray if full
+    
+    var iconHtml = '<div style="position:relative;width:32px;height:32px">'
+      +'<div style="position:absolute;inset:0;border-radius:50%;background:'+color+';opacity:0.2"></div>'
+      +'<div style="position:absolute;inset:4px;border-radius:50%;background:rgba(13,17,23,0.9);border:1.5px solid '+color+';display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 10px '+color+';">⚡</div>'
+      +(isAvail ? '<div style="position:absolute;top:-2px;right:-2px;background:'+LIME+';color:#000;font-size:9px;font-weight:900;border-radius:10px;padding:2px 5px;border:1.5px solid #000;">'+s.available+'</div>' : '')
+      +'</div>';
+
+    var cIcon = L.divIcon({
+        html: iconHtml,
+        className: '',
+        iconAnchor: [16, 16]
+    });
+
+    var m = L.marker([s.lat, s.lon], {icon: cIcon}).addTo(map);
+    m.bindTooltip('<b>'+s.name+'</b><br/><span style="color:'+(isAvail?LIME:'#ef4444')+'">'+(isAvail ? s.available+' Plugs Available' : 'Currently Full')+'</span>', {
+        className: 'leaflet-tooltip',
+        direction: 'top',
+        offset: [0, -10]
+    });
 });
 
 /* ── Vehicle marker ── */
