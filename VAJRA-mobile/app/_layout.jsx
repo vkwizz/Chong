@@ -330,11 +330,15 @@ export default function RootLayout() {
         setImmobilizer(val);
         setImmobActive(val);
 
-        // Per User Request: If immobilizer is activated (val=true), 
-        // we force the ignition UI to OFF because the circuit will be cut.
+        // Toggle logic: 
+        // 1. If activated (val=true), force Ignition OFF (security kill)
+        // 2. If deactivated (val=false), restore Ignition ON (ready state)
         if (val) {
             setIgnitionActive(false);
-            setIgnition(false); // Update simulator as well
+            setIgnition(false); // Update simulator
+        } else {
+            setIgnitionActive(true);
+            setIgnition(true);  // Update simulator
         }
     };
 
