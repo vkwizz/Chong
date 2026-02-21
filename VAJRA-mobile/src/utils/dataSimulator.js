@@ -30,6 +30,10 @@ export const CELLULAR_INFO = {
     imei: '887744556677882',
 };
 
+export function setTargetImei(newImei) {
+    CELLULAR_INFO.imei = newImei;
+}
+
 let routeIndex = 0;
 let analogVoltage = 12.4; // typical 12V lead-acid battery
 let ignitionOn = true;

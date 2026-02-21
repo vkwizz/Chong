@@ -134,7 +134,7 @@ export default function Dashboard() {
                 <View style={S.header}>
                     <View>
                         <Text style={S.headerSub}>Hello,</Text>
-                        <Text style={S.headerTitle}>VK</Text>
+                        <Text style={S.headerTitle}>{ctx?.user?.name || 'Vajra'}</Text>
                     </View>
                     <TouchableOpacity onPress={() => setShowSettings(true)} style={S.profileCircle}>
                         <Settings color={DARK} size={22} strokeWidth={2} style={{ alignSelf: 'center', marginTop: 11 }} />
@@ -527,7 +527,13 @@ export default function Dashboard() {
                         </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity style={S.logOutBtn}>
+                    <TouchableOpacity
+                        style={S.logOutBtn}
+                        onPress={() => {
+                            setShowSettings(false);
+                            ctx.logout();
+                        }}
+                    >
                         <LogOut color="#ef4444" size={20} />
                         <Text style={S.logOutText}>Log Out</Text>
                     </TouchableOpacity>

@@ -147,17 +147,22 @@ function SplashScreenOverlay({ onFinish }) {
     );
 }
 
-import { generateSimulatedPacket, setImmobilizer, setIgnition } from '../src/utils/dataSimulator';
+import { generateSimulatedPacket, setImmobilizer, setIgnition, setTargetImei } from '../src/utils/dataSimulator';
 import {
     emitPacket, connectMQTT,
     onPacketReceived, onControlReceived,
-    publishImmobilizerCommand
+    publishImmobilizerCommand,
+    setMqttImei
 } from '../src/utils/mqttClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AuthScreen from './auth';
 
 export const TelematicsContext = createContext(null);
 export const useTelematicsContext = () => useContext(TelematicsContext);
 
 export default function RootLayout() {
+    const [user, setUser] = useState(null);
+    const [authLoading, setAuthLoading] = useState(true);
     const [latestPacket, setLatestPacket] = useState(null);
     const [packetHistory, setPacketHistory] = useState([]);
     const [voltageHistory, setVoltageHistory] = useState([]);
@@ -171,6 +176,41 @@ export default function RootLayout() {
     const mqttConnectedRef = useRef(false);
     // Persist real hardware data even when offline
     const hasReceivedHardwareData = useRef(false);
+
+    useEffect(() => {
+        const loadSession = async () => {
+            try {
+                const session = await AsyncStorage.getItem('user_session');
+                if (session) {
+                    const userData = JSON.parse(session);
+                    setUser(userData);
+                    setTargetImei(userData.imei);
+                    setMqttImei(userData.imei);
+                }
+            } catch (e) {
+                console.error('Session load error', e);
+            } finally {
+                setAuthLoading(false);
+            }
+        };
+        loadSession();
+    }, []);
+
+    const login = async (userData) => {
+        setUser(userData);
+        setTargetImei(userData.imei);
+        setMqttImei(userData.imei);
+        // Reset state for new user
+        setLatestPacket(null);
+        setPacketHistory([]);
+        setVoltageHistory([]);
+    };
+
+    const logout = async () => {
+        await AsyncStorage.removeItem('user_session');
+        setUser(null);
+        setLatestPacket(null);
+    };
 
     const ingestPacket = (pkt) => {
         if (!pkt) return;
@@ -294,6 +334,9 @@ export default function RootLayout() {
 
     return (
         <TelematicsContext.Provider value={{
+            user,
+            login,
+            logout,
             latestPacket,
             packetHistory,
             voltageHistory,
@@ -305,8 +348,14 @@ export default function RootLayout() {
             setZones,
         }}>
             <StatusBar style="light" />
-            <Stack screenOptions={{ headerShown: false }} />
-            {!splashReady && <SplashScreenOverlay onFinish={() => setSplashReady(true)} />}
+
+            {!splashReady ? (
+                <SplashScreenOverlay onFinish={() => setSplashReady(true)} />
+            ) : !user ? (
+                <AuthScreen />
+            ) : (
+                <Stack screenOptions={{ headerShown: false }} />
+            )}
         </TelematicsContext.Provider>
     );
 }

@@ -22,6 +22,20 @@ let connected = false;
 
 export const connectionStatus = { get connected() { return connected; } };
 
+let currentTargetImei = '887744556677882';
+
+export function setMqttImei(imei) {
+    if (currentTargetImei === imei) return;
+    currentTargetImei = imei;
+    if (client && connected) {
+        // Re-subscribe if IMEI changes
+        client.unsubscribe('telematics/+/up');
+        client.unsubscribe('telematics/+/down');
+        client.subscribe(`telematics/${imei}/up`, { qos: 1 });
+        client.subscribe(`telematics/${imei}/down`, { qos: 1 });
+    }
+}
+
 export function connectMQTT(onStatus) {
     if (!CLUSTER_URL || CLUSTER_URL === 'YOUR_CLUSTER_URL') {
         onStatus?.('simulated'); return;
