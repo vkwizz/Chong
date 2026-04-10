@@ -1,16 +1,96 @@
-# React + Vite
+# 🌱 Smart Rubber Plantation Monitoring System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 📖 Overview
+This project is an **AI + IoT-based smart farming solution** designed to assist rubber farmers in **early disease detection, environmental monitoring, and intelligent decision-making**. It integrates real-time sensor data with machine learning to provide actionable insights.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚨 Problem Statement
+Rubber farmers face difficulty in early detection of leaf diseases, lack real-time environmental monitoring, have limited access to expert guidance, and struggle with fragmented data that is not converted into actionable insights.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 💡 Proposed Solution
+A smart system that:
+- Monitors environmental conditions using IoT sensors  
+- Detects leaf diseases using AI models  
+- Provides real-time insights through a dashboard  
+- Suggests preventive and corrective measures  
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## ⚙️ Features
+- 🌿 Leaf Disease Detection using Machine Learning  
+- 🌡️ Real-time Monitoring (Temperature, Humidity, Soil Moisture)  
+- 📊 Interactive Dashboard  
+- 🔔 Alerts & Smart Recommendations  
+- ☁️ Cloud Data Storage  
+- 📱 User-Friendly Interface  
+
+---
+
+## 🏗️ System Architecture
+IoT Sensors → Microcontroller (ESP32/Arduino)
+↓
+Backend Server/API
+↓
+Database + ML Model
+↓
+Frontend App
+
+
+---
+
+## 🛠️ Tech Stack
+
+### Hardware
+- ESP32 / Arduino  
+- Soil Moisture Sensor  
+- Temperature & Humidity Sensor  
+
+### Software
+- Frontend: React / React Native  
+- Backend: Node.js / FastAPI  
+- Database: MongoDB / Firebase  
+- Machine Learning: Python (TensorFlow / OpenCV)  
+
+---
+
+## 🚀 Implementation
+1. Sensors collect environmental data  
+2. Data is transmitted to backend via API  
+3. ML model processes leaf images for disease detection  
+4. Results are displayed in the dashboard  
+5. Alerts are generated for abnormal conditions  
+
+---
+
+## 📈 Results
+- Early detection of plant diseases  
+- Real-time farm monitoring achieved  
+- Reduced manual effort  
+- Improved decision-making for farmers  
+
+---
+
+## 🔮 Future Scope
+- Integration with weather APIs  
+- Offline mobile support  
+- Automated irrigation system  
+- Expansion to other crops  
+
+---
+
+## 🌍 SDG Alignment
+- SDG 2: Zero Hunger  
+- SDG 9: Industry, Innovation & Infrastructure  
+- SDG 12: Responsible Consumption  
+
+---
+
+## 📚 References
+- Research papers on plant disease detection  
+- IoT agriculture case studies  
+- TensorFlow documentation  
+
+---
