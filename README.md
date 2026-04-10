@@ -1,42 +1,48 @@
-# 🌱 Smart Rubber Plantation Monitoring System
+# 🚗 Real-Time Vehicle Telemetry & Monitoring System
+
+## 🏆 Hackathon Winning Project
+
+---
 
 ## 📖 Overview
-This project is an **AI + IoT-based smart farming solution** designed to assist rubber farmers in **early disease detection, environmental monitoring, and intelligent decision-making**. It integrates real-time sensor data with machine learning to provide actionable insights.
+This project is a **real-time vehicle telemetry system** that collects, transmits, and visualizes vehicle data such as speed, location, and performance metrics. It focuses on improving vehicle monitoring, safety, and analytics.
 
 ---
 
 ## 🚨 Problem Statement
-Rubber farmers face difficulty in early detection of leaf diseases, lack real-time environmental monitoring, have limited access to expert guidance, and struggle with fragmented data that is not converted into actionable insights.
+Modern vehicles lack accessible real-time telemetry systems for monitoring performance, detecting anomalies, and enabling intelligent analytics for safety and efficiency.
 
 ---
 
 ## 💡 Proposed Solution
-A smart system that:
-- Monitors environmental conditions using IoT sensors  
-- Detects leaf diseases using AI models  
-- Provides real-time insights through a dashboard  
-- Suggests preventive and corrective measures  
+A system that:
+- Collects live vehicle data using sensors  
+- Transmits data to a backend server in real-time  
+- Displays insights on a dashboard  
+- Enables monitoring and analytics  
 
 ---
 
 ## ⚙️ Features
-- 🌿 Leaf Disease Detection using Machine Learning  
-- 🌡️ Real-time Monitoring (Temperature, Humidity, Soil Moisture)  
-- 📊 Interactive Dashboard  
-- 🔔 Alerts & Smart Recommendations  
+- 🚗 Live Vehicle Data Streaming  
+- 📍 GPS Location Tracking  
+- ⚡ Performance Monitoring  
+- 📊 Real-Time Dashboard  
+- 🔔 Alerts for Abnormal Conditions  
 - ☁️ Cloud Data Storage  
-- 📱 User-Friendly Interface  
 
 ---
 
 ## 🏗️ System Architecture
-IoT Sensors → Microcontroller (ESP32/Arduino)
+Vehicle Sensors / Arduino
 ↓
-Backend Server/API
+Telemetry Module
 ↓
-Database + ML Model
+Backend Server (API)
 ↓
-Frontend App
+Database
+↓
+Web/App Dashboard
 
 
 ---
@@ -44,53 +50,52 @@ Frontend App
 ## 🛠️ Tech Stack
 
 ### Hardware
-- ESP32 / Arduino  
-- Soil Moisture Sensor  
-- Temperature & Humidity Sensor  
+- Arduino / ESP32  
+- GPS Module  
+- Vehicle Sensors  
 
 ### Software
-- Frontend: React / React Native  
-- Backend: Node.js / FastAPI  
-- Database: MongoDB / Firebase  
-- Machine Learning: Python (TensorFlow / OpenCV)  
+- Frontend: React (Web Dashboard)  
+- Backend: FastAPI / Node.js  
+- Communication: HTTP / MQTT  
+- Database: MongoDB  
 
 ---
 
 ## 🚀 Implementation
-1. Sensors collect environmental data  
-2. Data is transmitted to backend via API  
-3. ML model processes leaf images for disease detection  
-4. Results are displayed in the dashboard  
-5. Alerts are generated for abnormal conditions  
+1. Sensors collect vehicle data  
+2. Arduino sends data to backend server  
+3. Backend processes and stores data  
+4. Frontend fetches live telemetry  
+5. Dashboard updates in real-time  
 
 ---
 
 ## 📈 Results
-- Early detection of plant diseases  
-- Real-time farm monitoring achieved  
-- Reduced manual effort  
-- Improved decision-making for farmers  
+- Successfully implemented real-time data streaming  
+- Built an interactive dashboard  
+- Enabled anomaly detection  
+- Achieved hackathon-winning recognition  
 
 ---
 
 ## 🔮 Future Scope
-- Integration with weather APIs  
-- Offline mobile support  
-- Automated irrigation system  
-- Expansion to other crops  
+- Predictive maintenance using Machine Learning  
+- Smart city integration  
+- Mobile app for driver alerts  
+- Fleet management system  
 
 ---
 
-## 🌍 SDG Alignment
-- SDG 2: Zero Hunger  
-- SDG 9: Industry, Innovation & Infrastructure  
-- SDG 12: Responsible Consumption  
+## 🏆 Achievements
+- 🥇 Hackathon Winning Project  
+- Recognized for innovation in smart mobility  
 
 ---
 
 ## 📚 References
-- Research papers on plant disease detection  
-- IoT agriculture case studies  
-- TensorFlow documentation  
+- IoT telemetry systems  
+- Smart vehicle research  
+- FastAPI & MQTT documentation  
 
 ---
